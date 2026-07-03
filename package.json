@@ -1,0 +1,15 @@
+{
+  "name": "vendora",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AI-powered multi-vendor marketplace (PERN stack)",
+  "scripts": {
+    "dev": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
+    "dev:client": "npm run dev --prefix client",
+    "dev:server": "npm run dev --prefix server",
+    "install:all": "npm install --prefix client && npm install --prefix server"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.0"
+  }
+}
