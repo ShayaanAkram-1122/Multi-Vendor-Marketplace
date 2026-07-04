@@ -1,5 +1,3 @@
-.DS_Store
-node_modules
 # Logs
 logs
 *.log
@@ -146,4 +144,5 @@ out
 .yarn/install-state.gz
 .pnp.*.env
 .env
-.env
+.DS_Store
+node_modules

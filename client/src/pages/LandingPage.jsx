@@ -23,6 +23,20 @@ const GLOBAL_CSS = `
   background-size: 3px 3px;
   pointer-events: none;
 }
+
+@keyframes popIn {
+  from { opacity: 0; transform: scale(0.92) translateY(12px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.story-backdrop { animation: fadeIn .2s ease; }
+.story-modal { animation: popIn .28s cubic-bezier(0.22, 1, 0.36, 1); }
+@media (prefers-reduced-motion: reduce) {
+  .story-backdrop, .story-modal { animation: none; }
+}
 `
 
 const CATEGORIES = ['All', 'Home & Living', 'Jewelry', 'Art & Prints', 'Vintage', 'Wellness', 'Stationery']
@@ -114,6 +128,18 @@ export default function LandingPage() {
   const [category, setCategory] = useState('All')
   const [query, setQuery] = useState('')
   const [subscribed, setSubscribed] = useState(false)
+  const [activeStory, setActiveStory] = useState(null)
+
+  useEffect(() => {
+    if (!activeStory) return
+    const onKey = (e) => { if (e.key === 'Escape') setActiveStory(null) }
+    document.body.style.overflow = 'hidden'
+    window.addEventListener('keydown', onKey)
+    return () => {
+      document.body.style.overflow = ''
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [activeStory])
 
   const filtered = useMemo(() => {
     return PRODUCTS.filter((p) => {
@@ -406,16 +432,59 @@ export default function LandingPage() {
         <div className="grid md:grid-cols-3 gap-6">
           {TESTIMONIALS.map((t, i) => (
             <Reveal key={t.name} delay={i * 100}>
-              <div className="bg-white border border-[#E7DFD0] rounded-md p-6 h-full">
+              <button
+                type="button"
+                onClick={() => setActiveStory(t)}
+                className="w-full text-left bg-white border border-[#E7DFD0] rounded-md p-6 h-full cursor-pointer hover:-translate-y-1 hover:shadow-[0_18px_36px_-20px_rgba(43,25,12,0.45)] hover:border-[#5B2145]/40 transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5B2145]"
+              >
                 <BadgeCheck className="w-5 h-5 text-[#5B2145] mb-4" />
-                <p className="text-[#3A342E] text-[14.5px] leading-relaxed mb-5">&ldquo;{t.quote}&rdquo;</p>
+                <p className="text-[#3A342E] text-[14.5px] leading-relaxed mb-5 line-clamp-4">&ldquo;{t.quote}&rdquo;</p>
                 <p className="text-sm font-medium">{t.name}</p>
                 <p className="text-xs text-[#8A7F6E]">{t.role}</p>
-              </div>
+                <p className="mt-4 text-[11px] font-mono uppercase tracking-widest text-[#5B2145]">Click to read</p>
+              </button>
             </Reveal>
           ))}
         </div>
       </section>
+
+      {activeStory && (
+        <div
+          className="story-backdrop fixed inset-0 z-[100] flex items-center justify-center p-6 bg-[#231F1C]/55 backdrop-blur-sm"
+          onClick={() => setActiveStory(null)}
+          role="presentation"
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="story-title"
+            className="story-modal relative w-full max-w-lg bg-[#FFFDF9] border border-[#E7DFD0] rounded-md shadow-[0_28px_60px_-24px_rgba(43,25,12,0.55)] p-8 sm:p-10"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setActiveStory(null)}
+              aria-label="Close story"
+              className="absolute top-4 right-4 w-8 h-8 rounded-sm flex items-center justify-center text-[#8A7F6E] hover:text-[#231F1C] hover:bg-[#F1E4EA] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#5B2145]"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <Quote className="w-8 h-8 text-[#E8A93B] mb-5" />
+            <p id="story-title" className="font-['Fraunces'] text-xl sm:text-2xl leading-snug text-[#231F1C] mb-8">
+              &ldquo;{activeStory.quote}&rdquo;
+            </p>
+            <div className="flex items-center gap-3 border-t border-[#E7DFD0] pt-5">
+              <div className="w-10 h-10 rounded-full bg-[#F1E4EA] flex items-center justify-center">
+                <BadgeCheck className="w-5 h-5 text-[#5B2145]" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-[#231F1C]">{activeStory.name}</p>
+                <p className="text-xs text-[#8A7F6E]">{activeStory.role}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <section className="bg-[#231F1C] text-[#F4EFE6]">
         <div className="max-w-6xl mx-auto px-6 py-20 text-center">
