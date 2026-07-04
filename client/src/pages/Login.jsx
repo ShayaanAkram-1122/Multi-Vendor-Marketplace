@@ -1,12 +1,16 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
-import { ShoppingBag, Mail, Lock, ArrowLeft } from 'lucide-react'
+import { Link, useNavigate } from 'react-router-dom'
+import { ShoppingBag, Mail, Lock, ArrowLeft, Eye, EyeOff } from 'lucide-react'
+import { loginUser, storeAccessToken } from '../services/authApi'
 
 const FONT_IMPORT = `@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');`
 
 export default function Login() {
+  const navigate = useNavigate()
   const [form, setForm] = useState({ email: '', password: '' })
+  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
 
   const update = (field) => (e) => {
@@ -14,7 +18,7 @@ export default function Login() {
     setError('')
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
 
@@ -23,8 +27,20 @@ export default function Login() {
       return
     }
 
-    // UI-only for now — backend auth will plug in here
-    setSubmitted(true)
+    setLoading(true)
+    try {
+      const data = await loginUser({
+        email: form.email.trim(),
+        password: form.password,
+      })
+      storeAccessToken(data.accessToken)
+      setSubmitted(true)
+      navigate('/')
+    } catch (err) {
+      setError(err.message || 'Login failed')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -92,7 +108,7 @@ export default function Login() {
                 <span className="flex items-center gap-2 bg-white border border-[#E7DFD0] rounded-sm px-3 py-2.5 focus-within:border-[#5B2145] transition-colors">
                   <Lock className="w-4 h-4 text-[#8A7F6E] shrink-0" />
                   <input
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     value={form.password}
                     onChange={update('password')}
                     placeholder="Your password"
@@ -100,6 +116,14 @@ export default function Login() {
                     required
                     className="flex-1 outline-none text-sm bg-transparent placeholder:text-[#8A7F6E]"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    className="text-[#8A7F6E] hover:text-[#5B2145] cursor-pointer transition-colors shrink-0"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </span>
               </label>
 
@@ -111,9 +135,10 @@ export default function Login() {
 
               <button
                 type="submit"
-                className="w-full text-sm bg-[#5B2145] text-[#F4E9EE] font-medium py-2.5 rounded-sm cursor-pointer hover:bg-[#471735] hover:-translate-y-0.5 hover:scale-[1.02] transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5B2145]"
+                disabled={loading}
+                className="w-full text-sm bg-[#5B2145] text-[#F4E9EE] font-medium py-2.5 rounded-sm cursor-pointer hover:bg-[#471735] hover:-translate-y-0.5 hover:scale-[1.02] transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5B2145] disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:scale-100"
               >
-                Log in
+                {loading ? 'Signing in…' : 'Log in'}
               </button>
             </form>
           )}

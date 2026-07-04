@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
-import { ShoppingBag, Mail, Lock, User, Store, ArrowLeft } from 'lucide-react'
+import { Link, useNavigate } from 'react-router-dom'
+import { ShoppingBag, Mail, Lock, User, Store, ArrowLeft, Eye, EyeOff } from 'lucide-react'
+import { registerUser, storeAccessToken } from '../services/authApi'
 
 const FONT_IMPORT = `@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');`
 
@@ -10,6 +11,7 @@ const ROLES = [
 ]
 
 export default function Register() {
+  const navigate = useNavigate()
   const [role, setRole] = useState('buyer')
   const [form, setForm] = useState({
     name: '',
@@ -17,7 +19,10 @@ export default function Register() {
     password: '',
     confirmPassword: '',
   })
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
 
   const update = (field) => (e) => {
@@ -25,7 +30,7 @@ export default function Register() {
     setError('')
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
 
@@ -46,8 +51,22 @@ export default function Register() {
       return
     }
 
-    // UI-only for now — backend auth will plug in here
-    setSubmitted(true)
+    setLoading(true)
+    try {
+      const data = await registerUser({
+        name: form.name.trim(),
+        email: form.email.trim(),
+        password: form.password,
+        role,
+      })
+      storeAccessToken(data.accessToken)
+      setSubmitted(true)
+      navigate('/')
+    } catch (err) {
+      setError(err.message || 'Registration failed')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -154,7 +173,7 @@ export default function Register() {
                 <span className="flex items-center gap-2 bg-white border border-[#E7DFD0] rounded-sm px-3 py-2.5 focus-within:border-[#5B2145] transition-colors">
                   <Lock className="w-4 h-4 text-[#8A7F6E] shrink-0" />
                   <input
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     value={form.password}
                     onChange={update('password')}
                     placeholder="At least 8 characters"
@@ -162,6 +181,14 @@ export default function Register() {
                     required
                     className="flex-1 outline-none text-sm bg-transparent placeholder:text-[#8A7F6E]"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    className="text-[#8A7F6E] hover:text-[#5B2145] cursor-pointer transition-colors shrink-0"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </span>
               </label>
 
@@ -170,7 +197,7 @@ export default function Register() {
                 <span className="flex items-center gap-2 bg-white border border-[#E7DFD0] rounded-sm px-3 py-2.5 focus-within:border-[#5B2145] transition-colors">
                   <Lock className="w-4 h-4 text-[#8A7F6E] shrink-0" />
                   <input
-                    type="password"
+                    type={showConfirmPassword ? 'text' : 'password'}
                     value={form.confirmPassword}
                     onChange={update('confirmPassword')}
                     placeholder="Repeat password"
@@ -178,6 +205,14 @@ export default function Register() {
                     required
                     className="flex-1 outline-none text-sm bg-transparent placeholder:text-[#8A7F6E]"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword((v) => !v)}
+                    aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
+                    className="text-[#8A7F6E] hover:text-[#5B2145] cursor-pointer transition-colors shrink-0"
+                  >
+                    {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </span>
               </label>
 
@@ -189,9 +224,10 @@ export default function Register() {
 
               <button
                 type="submit"
-                className="w-full text-sm bg-[#5B2145] text-[#F4E9EE] font-medium py-2.5 rounded-sm cursor-pointer hover:bg-[#471735] hover:-translate-y-0.5 hover:scale-[1.02] transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5B2145]"
+                disabled={loading}
+                className="w-full text-sm bg-[#5B2145] text-[#F4E9EE] font-medium py-2.5 rounded-sm cursor-pointer hover:bg-[#471735] hover:-translate-y-0.5 hover:scale-[1.02] transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5B2145] disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:scale-100"
               >
-                Create account
+                {loading ? 'Creating account…' : 'Create account'}
               </button>
             </form>
           )}
