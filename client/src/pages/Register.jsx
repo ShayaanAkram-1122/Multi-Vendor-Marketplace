@@ -1,12 +1,15 @@
-import { useState, useEffect } from 'react'
-import { ShoppingBag, X, Mail, Lock, User, Store } from 'lucide-react'
+import { useState } from 'react'
+import { Link } from 'react-router-dom'
+import { ShoppingBag, Mail, Lock, User, Store, ArrowLeft } from 'lucide-react'
+
+const FONT_IMPORT = `@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');`
 
 const ROLES = [
   { id: 'buyer', label: 'Buyer', hint: 'Shop & message sellers' },
   { id: 'seller', label: 'Seller', hint: 'Open your own shop' },
 ]
 
-export default function Register({ open, onClose, onSwitchToLogin }) {
+export default function Register() {
   const [role, setRole] = useState('buyer')
   const [form, setForm] = useState({
     name: '',
@@ -16,27 +19,6 @@ export default function Register({ open, onClose, onSwitchToLogin }) {
   })
   const [error, setError] = useState('')
   const [submitted, setSubmitted] = useState(false)
-
-  useEffect(() => {
-    if (!open) return
-    setError('')
-    setSubmitted(false)
-    setRole('buyer')
-    setForm({ name: '', email: '', password: '', confirmPassword: '' })
-  }, [open])
-
-  useEffect(() => {
-    if (!open) return
-    const onKey = (e) => { if (e.key === 'Escape') onClose() }
-    document.body.style.overflow = 'hidden'
-    window.addEventListener('keydown', onKey)
-    return () => {
-      document.body.style.overflow = ''
-      window.removeEventListener('keydown', onKey)
-    }
-  }, [open, onClose])
-
-  if (!open) return null
 
   const update = (field) => (e) => {
     setForm((prev) => ({ ...prev, [field]: e.target.value }))
@@ -69,38 +51,31 @@ export default function Register({ open, onClose, onSwitchToLogin }) {
   }
 
   return (
-    <div
-      className="story-backdrop fixed inset-0 z-[110] flex items-center justify-center p-4 sm:p-6 bg-[#231F1C]/55 backdrop-blur-sm"
-      onClick={onClose}
-      role="presentation"
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="register-title"
-        className="story-modal relative w-full max-w-md bg-[#FFFDF9] border border-[#E7DFD0] rounded-md shadow-[0_28px_60px_-24px_rgba(43,25,12,0.55)] overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between px-6 pt-6 pb-4">
-          <div className="flex items-center gap-2">
+    <div className="min-h-screen bg-[#FAF7F2] text-[#231F1C] flex flex-col" style={{ fontFamily: "'Inter', sans-serif" }}>
+      <style>{FONT_IMPORT}</style>
+
+      <header className="border-b border-[#E7DFD0] bg-[#FAF7F2]/90 backdrop-blur">
+        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+          <Link to="/" className="flex items-center gap-2 cursor-pointer hover:-translate-y-0.5 transition-transform duration-200">
             <div className="w-7 h-7 rounded-sm bg-[#5B2145] flex items-center justify-center text-[#F4E9EE]">
               <ShoppingBag className="w-4 h-4" />
             </div>
             <span className="font-['Fraunces'] font-semibold text-lg tracking-tight">Vendora</span>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            className="w-8 h-8 rounded-sm flex items-center justify-center text-[#8A7F6E] hover:text-[#231F1C] hover:bg-[#F1E4EA] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#5B2145]"
+          </Link>
+          <Link
+            to="/"
+            className="inline-flex items-center gap-1.5 text-sm text-[#4A423A] cursor-pointer hover:text-[#5B2145] hover:-translate-y-0.5 transition-all duration-200"
           >
-            <X className="w-4 h-4" />
-          </button>
+            <ArrowLeft className="w-4 h-4" /> Back home
+          </Link>
         </div>
+      </header>
 
-        <div className="px-6 pb-7">
-          <h2 id="register-title" className="font-['Fraunces'] text-2xl mb-1">Join Vendora</h2>
-          <p className="text-sm text-[#8A7F6E] mb-5">
+      <main className="flex-1 flex items-center justify-center px-6 py-12">
+        <div className="w-full max-w-md bg-[#FFFDF9] border border-[#E7DFD0] rounded-md shadow-[0_20px_48px_-28px_rgba(43,25,12,0.4)] p-8">
+          <p className="font-mono text-[11px] uppercase tracking-widest text-[#5B2145] mb-2">Account</p>
+          <h1 className="font-['Fraunces'] text-3xl mb-1">Join Vendora</h1>
+          <p className="text-sm text-[#8A7F6E] mb-6">
             Create an account as a buyer or open your shop as a seller.
           </p>
 
@@ -110,13 +85,12 @@ export default function Register({ open, onClose, onSwitchToLogin }) {
               <p className="text-sm text-[#4A423A] mb-4">
                 Auth is UI-only for now. Backend registration will connect here next.
               </p>
-              <button
-                type="button"
-                onClick={onClose}
-                className="text-sm bg-[#5B2145] text-[#F4E9EE] px-4 py-2 rounded-sm hover:bg-[#471735] transition-colors"
+              <Link
+                to="/"
+                className="inline-block text-sm bg-[#5B2145] text-[#F4E9EE] px-4 py-2 rounded-sm cursor-pointer hover:bg-[#471735] hover:-translate-y-0.5 hover:scale-[1.03] transition-all duration-200"
               >
                 Continue browsing
-              </button>
+              </Link>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-3.5">
@@ -143,7 +117,7 @@ export default function Register({ open, onClose, onSwitchToLogin }) {
                       key={r.id}
                       type="button"
                       onClick={() => setRole(r.id)}
-                      className={`text-left rounded-sm border px-3 py-2.5 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#5B2145] ${
+                      className={`text-left rounded-sm border px-3 py-2.5 cursor-pointer transition-all duration-200 hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#5B2145] ${
                         role === r.id
                           ? 'border-[#5B2145] bg-[#F1E4EA]'
                           : 'border-[#E7DFD0] bg-white hover:border-[#5B2145]/40'
@@ -215,7 +189,7 @@ export default function Register({ open, onClose, onSwitchToLogin }) {
 
               <button
                 type="submit"
-                className="w-full text-sm bg-[#5B2145] text-[#F4E9EE] font-medium py-2.5 rounded-sm hover:bg-[#471735] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5B2145]"
+                className="w-full text-sm bg-[#5B2145] text-[#F4E9EE] font-medium py-2.5 rounded-sm cursor-pointer hover:bg-[#471735] hover:-translate-y-0.5 hover:scale-[1.02] transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5B2145]"
               >
                 Create account
               </button>
@@ -223,19 +197,15 @@ export default function Register({ open, onClose, onSwitchToLogin }) {
           )}
 
           {!submitted && (
-            <p className="mt-5 text-center text-sm text-[#8A7F6E]">
+            <p className="mt-6 text-center text-sm text-[#8A7F6E]">
               Already have an account?{' '}
-              <button
-                type="button"
-                onClick={onSwitchToLogin}
-                className="text-[#5B2145] font-medium hover:underline"
-              >
+              <Link to="/login" className="text-[#5B2145] font-medium cursor-pointer hover:underline">
                 Log in
-              </button>
+              </Link>
             </p>
           )}
         </div>
-      </div>
+      </main>
     </div>
   )
 }

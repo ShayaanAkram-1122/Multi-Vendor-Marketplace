@@ -1,11 +1,10 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import {
   Search, Sparkles, ShoppingBag, MessageCircle, Star, ShieldCheck,
   TrendingUp, ArrowRight, Menu, X, Heart, BadgeCheck, Wallet, Bell,
   Quote, ChevronRight,
 } from 'lucide-react'
-import Login from '../components/Login'
-import Register from '../components/Register'
 
 const GLOBAL_CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
@@ -131,21 +130,6 @@ export default function LandingPage() {
   const [query, setQuery] = useState('')
   const [subscribed, setSubscribed] = useState(false)
   const [activeStory, setActiveStory] = useState(null)
-  const [loginOpen, setLoginOpen] = useState(false)
-  const [registerOpen, setRegisterOpen] = useState(false)
-
-  const openLogin = () => {
-    setRegisterOpen(false)
-    setLoginOpen(true)
-    setMenuOpen(false)
-  }
-
-  const openRegister = () => {
-    setLoginOpen(false)
-    setRegisterOpen(true)
-    setMenuOpen(false)
-  }
-
   useEffect(() => {
     if (!activeStory) return
     const onKey = (e) => { if (e.key === 'Escape') setActiveStory(null) }
@@ -188,10 +172,18 @@ export default function LandingPage() {
             ))}
           </nav>
           <div className="hidden md:flex items-center gap-3">
-            <button type="button" onClick={openLogin} className="text-sm text-[#4A423A] hover:text-[#5B2145] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#5B2145] rounded-sm px-1">Log in</button>
-            <button type="button" onClick={openRegister} className="text-sm bg-[#5B2145] text-[#F4E9EE] px-4 py-2 rounded-sm hover:bg-[#471735] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5B2145]">
+            <Link
+              to="/login"
+              className="text-sm text-[#4A423A] cursor-pointer rounded-sm px-2 py-1.5 hover:text-[#5B2145] hover:-translate-y-0.5 hover:scale-[1.04] transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#5B2145]"
+            >
+              Log in
+            </Link>
+            <Link
+              to="/register"
+              className="text-sm bg-[#5B2145] text-[#F4E9EE] px-4 py-2 rounded-sm cursor-pointer hover:bg-[#471735] hover:-translate-y-0.5 hover:scale-[1.04] hover:shadow-[0_10px_20px_-12px_rgba(91,33,69,0.7)] transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5B2145]"
+            >
               Start shopping
-            </button>
+            </Link>
           </div>
           <button type="button" className="md:hidden focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#5B2145] rounded-sm" onClick={() => setMenuOpen(!menuOpen)} aria-label="Toggle menu" aria-expanded={menuOpen}>
             {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -203,8 +195,8 @@ export default function LandingPage() {
             <a href="#ai">How AI helps</a>
             <a href="#sell">Sell on Vendora</a>
             <a href="#stories">Stories</a>
-            <button type="button" onClick={openLogin} className="text-left text-[#4A423A]">Log in</button>
-            <button type="button" onClick={openRegister} className="text-left bg-[#5B2145] text-[#F4E9EE] px-4 py-2 rounded-sm w-fit mt-1">Start shopping</button>
+            <Link to="/login" onClick={() => setMenuOpen(false)} className="text-left text-[#4A423A] cursor-pointer hover:text-[#5B2145] hover:-translate-y-0.5 transition-all duration-200 w-fit">Log in</Link>
+            <Link to="/register" onClick={() => setMenuOpen(false)} className="text-left bg-[#5B2145] text-[#F4E9EE] px-4 py-2 rounded-sm w-fit mt-1 cursor-pointer hover:bg-[#471735] hover:-translate-y-0.5 hover:scale-[1.04] transition-all duration-200">Start shopping</Link>
           </div>
         )}
       </header>
@@ -323,9 +315,9 @@ export default function LandingPage() {
               </div>
             </div>
 
-            <button type="button" onClick={openRegister} className="relative inline-flex items-center gap-2 text-sm bg-[#E8A93B] text-[#231F1C] font-medium px-4 py-2.5 rounded-sm hover:bg-[#d99c2f] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E8A93B]">
+            <Link to="/register" className="relative inline-flex items-center gap-2 text-sm bg-[#E8A93B] text-[#231F1C] font-medium px-4 py-2.5 rounded-sm cursor-pointer hover:bg-[#d99c2f] hover:-translate-y-0.5 hover:scale-[1.04] hover:shadow-[0_10px_20px_-12px_rgba(232,169,59,0.7)] transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E8A93B]">
               Open your shop <ArrowRight className="w-4 h-4" />
-            </button>
+            </Link>
           </div>
         </Reveal>
       </section>
@@ -510,12 +502,12 @@ export default function LandingPage() {
             <h2 className="font-['Fraunces'] text-3xl sm:text-4xl mb-4">Come see what&apos;s in the stalls today</h2>
             <p className="text-[#D8CFC0] max-w-md mx-auto mb-8">Free to browse, free to join. Sellers keep full control of their shop, their prices, their voice.</p>
             <div className="flex flex-wrap justify-center gap-3 mb-10">
-              <button type="button" onClick={openRegister} className="bg-[#E8A93B] text-[#231F1C] font-medium px-6 py-3 rounded-sm hover:bg-[#d99c2f] transition-colors inline-flex items-center gap-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E8A93B]">
+              <Link to="/register" className="bg-[#E8A93B] text-[#231F1C] font-medium px-6 py-3 rounded-sm cursor-pointer hover:bg-[#d99c2f] hover:-translate-y-0.5 hover:scale-[1.04] hover:shadow-[0_10px_20px_-12px_rgba(232,169,59,0.7)] transition-all duration-200 inline-flex items-center gap-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E8A93B]">
                 Start shopping <ArrowRight className="w-4 h-4" />
-              </button>
-              <button type="button" onClick={openRegister} className="border border-[#4A423A] text-[#F4EFE6] px-6 py-3 rounded-sm hover:border-[#E8A93B] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E8A93B]">
+              </Link>
+              <Link to="/register" className="border border-[#4A423A] text-[#F4EFE6] px-6 py-3 rounded-sm cursor-pointer hover:border-[#E8A93B] hover:-translate-y-0.5 hover:scale-[1.04] transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E8A93B]">
                 Open your shop
-              </button>
+              </Link>
             </div>
 
             <form
@@ -544,16 +536,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <Login
-        open={loginOpen}
-        onClose={() => setLoginOpen(false)}
-        onSwitchToRegister={openRegister}
-      />
-      <Register
-        open={registerOpen}
-        onClose={() => setRegisterOpen(false)}
-        onSwitchToLogin={openLogin}
-      />
     </div>
   )
 }
