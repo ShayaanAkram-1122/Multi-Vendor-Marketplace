@@ -5,6 +5,7 @@ const {
   generateRefreshToken,
   hashToken,
   getRefreshExpiryDate,
+  getPasswordResetExpiryDate,
   getRefreshCookieOptions,
   REFRESH_COOKIE_NAME,
 } = require('../utils/tokens')
@@ -188,6 +189,80 @@ async function me(req, res, next) {
   }
 }
 
+async function forgotPassword(req, res, next) {
+  try {
+    const email = String(req.body.email || '').trim().toLowerCase()
+
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' })
+    }
+
+    const user = await authQueries.findUserByEmail(email)
+    if (!user) {
+      return res.status(404).json({ message: 'No account found with this email' })
+    }
+
+    await authQueries.invalidateUserPasswordResetTokens(user.id)
+
+    const resetToken = generateRefreshToken()
+    const tokenHash = hashToken(resetToken)
+    const expiresAt = getPasswordResetExpiryDate()
+
+    await authQueries.storePasswordResetToken({
+      userId: user.id,
+      tokenHash,
+      expiresAt,
+    })
+
+    return res.json({
+      message: 'Account found. You can now set a new password.',
+      resetToken,
+      email: user.email,
+    })
+  } catch (err) {
+    return next(err)
+  }
+}
+
+async function resetPassword(req, res, next) {
+  try {
+    const token = String(req.body.token || '').trim()
+    const password = String(req.body.password || '')
+    const confirmPassword = String(req.body.confirmPassword || '')
+
+    if (!token) {
+      return res.status(400).json({ message: 'Reset token is required' })
+    }
+
+    if (!password || !confirmPassword) {
+      return res.status(400).json({ message: 'Password and confirmation are required' })
+    }
+
+    if (password.length < 8) {
+      return res.status(400).json({ message: 'Password must be at least 8 characters' })
+    }
+
+    if (password !== confirmPassword) {
+      return res.status(400).json({ message: 'Passwords do not match' })
+    }
+
+    const tokenHash = hashToken(token)
+    const stored = await authQueries.findValidPasswordResetToken(tokenHash)
+    if (!stored) {
+      return res.status(400).json({ message: 'Invalid or expired reset link. Please request a new one.' })
+    }
+
+    const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS)
+    await authQueries.updateUserPassword(stored.user_id, passwordHash)
+    await authQueries.markPasswordResetTokenUsed(tokenHash)
+    await authQueries.revokeAllUserRefreshTokens(stored.user_id)
+
+    return res.json({ message: 'Password updated successfully. You can now log in.' })
+  } catch (err) {
+    return next(err)
+  }
+}
+
 module.exports = {
   register,
   login,
@@ -195,4 +270,6 @@ module.exports = {
   logout,
   logoutAll,
   me,
+  forgotPassword,
+  resetPassword,
 }

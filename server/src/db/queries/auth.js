@@ -66,6 +66,50 @@ const DELETE_EXPIRED_REFRESH_TOKENS = `
      OR revoked_at IS NOT NULL
 `
 
+const INVALIDATE_USER_PASSWORD_RESET_TOKENS = `
+  UPDATE password_reset_tokens
+  SET used_at = NOW()
+  WHERE user_id = $1
+    AND used_at IS NULL
+`
+
+const INSERT_PASSWORD_RESET_TOKEN = `
+  INSERT INTO password_reset_tokens (user_id, token_hash, expires_at)
+  VALUES ($1, $2, $3)
+  RETURNING id, user_id, expires_at, created_at
+`
+
+const FIND_VALID_PASSWORD_RESET_TOKEN = `
+  SELECT
+    prt.id,
+    prt.user_id,
+    prt.token_hash,
+    prt.expires_at,
+    u.email,
+    u.name
+  FROM password_reset_tokens prt
+  INNER JOIN users u ON u.id = prt.user_id
+  WHERE prt.token_hash = $1
+    AND prt.used_at IS NULL
+    AND prt.expires_at > NOW()
+  LIMIT 1
+`
+
+const MARK_PASSWORD_RESET_TOKEN_USED = `
+  UPDATE password_reset_tokens
+  SET used_at = NOW()
+  WHERE token_hash = $1
+    AND used_at IS NULL
+  RETURNING id
+`
+
+const UPDATE_USER_PASSWORD = `
+  UPDATE users
+  SET password_hash = $2
+  WHERE id = $1
+  RETURNING id, name, email, role, created_at
+`
+
 async function createUser({ name, email, passwordHash, role }) {
   const { rows } = await query(CREATE_USER, [name, email, passwordHash, role])
   return rows[0]
@@ -110,6 +154,30 @@ async function cleanupRefreshTokens() {
   await query(DELETE_EXPIRED_REFRESH_TOKENS)
 }
 
+async function invalidateUserPasswordResetTokens(userId) {
+  await query(INVALIDATE_USER_PASSWORD_RESET_TOKENS, [userId])
+}
+
+async function storePasswordResetToken({ userId, tokenHash, expiresAt }) {
+  const { rows } = await query(INSERT_PASSWORD_RESET_TOKEN, [userId, tokenHash, expiresAt])
+  return rows[0]
+}
+
+async function findValidPasswordResetToken(tokenHash) {
+  const { rows } = await query(FIND_VALID_PASSWORD_RESET_TOKEN, [tokenHash])
+  return rows[0] || null
+}
+
+async function markPasswordResetTokenUsed(tokenHash) {
+  const { rows } = await query(MARK_PASSWORD_RESET_TOKEN_USED, [tokenHash])
+  return rows[0] || null
+}
+
+async function updateUserPassword(userId, passwordHash) {
+  const { rows } = await query(UPDATE_USER_PASSWORD, [userId, passwordHash])
+  return rows[0]
+}
+
 module.exports = {
   createUser,
   findUserByEmail,
@@ -119,6 +187,11 @@ module.exports = {
   revokeRefreshToken,
   revokeAllUserRefreshTokens,
   cleanupRefreshTokens,
+  invalidateUserPasswordResetTokens,
+  storePasswordResetToken,
+  findValidPasswordResetToken,
+  markPasswordResetTokenUsed,
+  updateUserPassword,
   // exported for reference / tests
   SQL: {
     CREATE_USER,
@@ -129,5 +202,10 @@ module.exports = {
     REVOKE_REFRESH_TOKEN,
     REVOKE_ALL_USER_REFRESH_TOKENS,
     DELETE_EXPIRED_REFRESH_TOKENS,
+    INVALIDATE_USER_PASSWORD_RESET_TOKENS,
+    INSERT_PASSWORD_RESET_TOKEN,
+    FIND_VALID_PASSWORD_RESET_TOKEN,
+    MARK_PASSWORD_RESET_TOKEN_USED,
+    UPDATE_USER_PASSWORD,
   },
 }

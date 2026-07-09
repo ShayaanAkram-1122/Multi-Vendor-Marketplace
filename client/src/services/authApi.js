@@ -31,6 +31,20 @@ export function loginUser(payload) {
   })
 }
 
+export function forgotPassword(payload) {
+  return request('/auth/forgot-password', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+export function resetPassword(payload) {
+  return request('/auth/reset-password', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
 export function logoutUser() {
   return request('/auth/logout', { method: 'POST' })
 }

@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken')
 
 const ACCESS_TOKEN_EXPIRES = process.env.ACCESS_TOKEN_EXPIRES || '15m'
 const REFRESH_TOKEN_EXPIRES = process.env.REFRESH_TOKEN_EXPIRES || '7d'
+const PASSWORD_RESET_EXPIRES = process.env.PASSWORD_RESET_EXPIRES || '1h'
 const REFRESH_COOKIE_NAME = 'vendora_refresh'
 
 function getAccessSecret() {
@@ -60,6 +61,10 @@ function getRefreshExpiryDate() {
   return new Date(Date.now() + parseDurationToMs(REFRESH_TOKEN_EXPIRES))
 }
 
+function getPasswordResetExpiryDate() {
+  return new Date(Date.now() + parseDurationToMs(PASSWORD_RESET_EXPIRES))
+}
+
 function getRefreshCookieOptions() {
   const isProd = process.env.NODE_ENV === 'production'
   return {
@@ -74,11 +79,13 @@ function getRefreshCookieOptions() {
 module.exports = {
   ACCESS_TOKEN_EXPIRES,
   REFRESH_TOKEN_EXPIRES,
+  PASSWORD_RESET_EXPIRES,
   REFRESH_COOKIE_NAME,
   signAccessToken,
   verifyAccessToken,
   generateRefreshToken,
   hashToken,
   getRefreshExpiryDate,
+  getPasswordResetExpiryDate,
   getRefreshCookieOptions,
 }
