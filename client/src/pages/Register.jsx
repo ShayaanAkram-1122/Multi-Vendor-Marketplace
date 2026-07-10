@@ -61,7 +61,7 @@ export default function Register() {
       })
       storeAccessToken(data.accessToken)
       setSubmitted(true)
-      navigate('/')
+      navigate('/shop')
     } catch (err) {
       setError(err.message || 'Registration failed')
     } finally {

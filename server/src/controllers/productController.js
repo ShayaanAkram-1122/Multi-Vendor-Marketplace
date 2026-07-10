@@ -4,14 +4,24 @@ async function list(req, res, next) {
   try {
     const category = req.query.category || null
     const search = req.query.search || req.query.q || null
-    const limit = Math.min(Number(req.query.limit) || 100, 300)
+    const sort = req.query.sort || 'newest'
+    const page = Number(req.query.page) || 1
+    const limit = Number(req.query.limit) || 12
 
-    const [products, total] = await Promise.all([
-      productQueries.listProducts({ category, search, limit }),
-      productQueries.countProducts({ category, search }),
-    ])
+    const result = await productQueries.listProducts({
+      category,
+      search,
+      sort,
+      page,
+      limit,
+    })
 
-    return res.json({ products, total })
+    // Backward-compatible aliases for the marketing landing page
+    return res.json({
+      ...result,
+      products: result.data,
+      total: result.pagination.total,
+    })
   } catch (err) {
     return next(err)
   }
@@ -19,9 +29,9 @@ async function list(req, res, next) {
 
 async function aiPicks(req, res, next) {
   try {
-    const limit = Math.min(Number(req.query.limit) || 8, 50)
+    const limit = Number(req.query.limit) || 8
     const products = await productQueries.listAiPicks(limit)
-    return res.json({ products })
+    return res.json({ products, data: products })
   } catch (err) {
     return next(err)
   }

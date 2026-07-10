@@ -35,7 +35,7 @@ export default function Login() {
       })
       storeAccessToken(data.accessToken)
       setSubmitted(true)
-      navigate('/')
+      navigate('/shop')
     } catch (err) {
       setError(err.message || 'Login failed')
     } finally {

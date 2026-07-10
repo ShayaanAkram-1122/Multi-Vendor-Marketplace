@@ -216,7 +216,7 @@ export default function LandingPage() {
               Log in
             </Link>
             <Link
-              to="/register"
+              to="/shop"
               className="text-sm bg-[#5B2145] text-[#F4E9EE] px-4 py-2 rounded-sm cursor-pointer hover:bg-[#471735] hover:-translate-y-0.5 hover:scale-[1.04] hover:shadow-[0_10px_20px_-12px_rgba(91,33,69,0.7)] transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5B2145]"
             >
               Start shopping
@@ -233,7 +233,7 @@ export default function LandingPage() {
             <a href="#sell">Sell on Vendora</a>
             <a href="#stories">Stories</a>
             <Link to="/login" onClick={() => setMenuOpen(false)} className="text-left text-[#4A423A] cursor-pointer hover:text-[#5B2145] hover:-translate-y-0.5 transition-all duration-200 w-fit">Log in</Link>
-            <Link to="/register" onClick={() => setMenuOpen(false)} className="text-left bg-[#5B2145] text-[#F4E9EE] px-4 py-2 rounded-sm w-fit mt-1 cursor-pointer hover:bg-[#471735] hover:-translate-y-0.5 hover:scale-[1.04] transition-all duration-200">Start shopping</Link>
+            <Link to="/shop" onClick={() => setMenuOpen(false)} className="text-left bg-[#5B2145] text-[#F4E9EE] px-4 py-2 rounded-sm w-fit mt-1 cursor-pointer hover:bg-[#471735] hover:-translate-y-0.5 hover:scale-[1.04] transition-all duration-200">Start shopping</Link>
           </div>
         )}
       </header>
@@ -577,7 +577,7 @@ export default function LandingPage() {
             <h2 className="font-['Fraunces'] text-3xl sm:text-4xl mb-4">Come see what&apos;s in the stalls today</h2>
             <p className="text-[#D8CFC0] max-w-md mx-auto mb-8">Free to browse, free to join. Sellers keep full control of their shop, their prices, their voice.</p>
             <div className="flex flex-wrap justify-center gap-3 mb-10">
-              <Link to="/register" className="bg-[#E8A93B] text-[#231F1C] font-medium px-6 py-3 rounded-sm cursor-pointer hover:bg-[#d99c2f] hover:-translate-y-0.5 hover:scale-[1.04] hover:shadow-[0_10px_20px_-12px_rgba(232,169,59,0.7)] transition-all duration-200 inline-flex items-center gap-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E8A93B]">
+              <Link to="/shop" className="bg-[#E8A93B] text-[#231F1C] font-medium px-6 py-3 rounded-sm cursor-pointer hover:bg-[#d99c2f] hover:-translate-y-0.5 hover:scale-[1.04] hover:shadow-[0_10px_20px_-12px_rgba(232,169,59,0.7)] transition-all duration-200 inline-flex items-center gap-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E8A93B]">
                 Start shopping <ArrowRight className="w-4 h-4" />
               </Link>
               <Link to="/register" className="border border-[#4A423A] text-[#F4EFE6] px-6 py-3 rounded-sm cursor-pointer hover:border-[#E8A93B] hover:-translate-y-0.5 hover:scale-[1.04] transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E8A93B]">
