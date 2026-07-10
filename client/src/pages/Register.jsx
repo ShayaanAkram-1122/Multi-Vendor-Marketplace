@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ShoppingBag, Mail, Lock, User, Store, ArrowLeft, Eye, EyeOff } from 'lucide-react'
-import { registerUser, storeAccessToken } from '../services/authApi'
+import { registerUser } from '../services/authApi'
+import { useAuth } from '../context/AuthContext'
 
 const FONT_IMPORT = `@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');`
 
@@ -12,6 +13,7 @@ const ROLES = [
 
 export default function Register() {
   const navigate = useNavigate()
+  const { setSession } = useAuth()
   const [role, setRole] = useState('buyer')
   const [form, setForm] = useState({
     name: '',
@@ -59,7 +61,7 @@ export default function Register() {
         password: form.password,
         role,
       })
-      storeAccessToken(data.accessToken)
+      setSession(data)
       setSubmitted(true)
       navigate('/shop')
     } catch (err) {

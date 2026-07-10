@@ -4,13 +4,14 @@ import HeroFlatlay from '../components/HeroFlatlay'
 import CategoryShelf from '../components/CategoryShelf'
 import ProductCard from '../components/ProductCard'
 import { fetchProducts, getAiPicks, getByCategory } from '../lib/api'
-import { getAccessToken, getMe, clearAccessToken } from '../services/authApi'
+import { useAuth } from '../context/AuthContext'
 
 const CATEGORIES = ['Home & Living', 'Jewelry', 'Art & Prints', 'Vintage', 'Wellness', 'Stationery']
 
 const FONT_IMPORT = `@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600;700&display=swap');`
 
 export default function BuyerLandingPage() {
+  const { user } = useAuth()
   const [activeCategory, setActiveCategory] = useState(null)
   const [search, setSearch] = useState('')
   const [sort, setSort] = useState('newest')
@@ -19,24 +20,15 @@ export default function BuyerLandingPage() {
   const [loading, setLoading] = useState(true)
   const [aiPicks, setAiPicks] = useState([])
   const [shelves, setShelves] = useState({})
-  const [user, setUser] = useState(null)
+  const [cartCount] = useState(0)
+  const [wishlistCount] = useState(0)
+  const [notificationCount] = useState(0)
 
   useEffect(() => {
     getAiPicks(10).then(setAiPicks)
     Promise.all(
       CATEGORIES.map(async (cat) => [cat, await getByCategory(cat, 10)]),
     ).then((entries) => setShelves(Object.fromEntries(entries)))
-  }, [])
-
-  useEffect(() => {
-    const token = getAccessToken()
-    if (!token) return
-    getMe(token)
-      .then((data) => setUser({ name: data.user?.name || 'Buyer' }))
-      .catch(() => {
-        clearAccessToken()
-        setUser(null)
-      })
   }, [])
 
   useEffect(() => {
@@ -57,9 +49,9 @@ export default function BuyerLandingPage() {
         activeCategory={activeCategory}
         onSelectCategory={setActiveCategory}
         onSearch={setSearch}
-        cartCount={0}
-        wishlistCount={0}
-        notificationCount={0}
+        cartCount={cartCount}
+        wishlistCount={wishlistCount}
+        notificationCount={notificationCount}
         user={user}
       />
 

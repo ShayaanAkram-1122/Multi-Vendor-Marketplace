@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { Heart, ShoppingBag, Bell, Search, Menu, ChevronDown } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import UtilityBar from './UtilityBar'
 import MobileMenu from './MobileMenu'
+import { useAuth } from '../context/AuthContext'
+import { logoutUser } from '../services/authApi'
 
 const CATEGORIES = ['Home & Living', 'Jewelry', 'Art & Prints', 'Vintage', 'Wellness', 'Stationery']
 
@@ -15,6 +17,8 @@ export default function Header({
   notificationCount = 0,
   user = null,
 }) {
+  const navigate = useNavigate()
+  const { logout } = useAuth()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [accountOpen, setAccountOpen] = useState(false)
   const accountRef = useRef(null)
@@ -29,6 +33,17 @@ export default function Header({
     document.addEventListener('mousedown', onClick)
     return () => document.removeEventListener('mousedown', onClick)
   }, [accountOpen])
+
+  const handleSignOut = async () => {
+    setAccountOpen(false)
+    try {
+      await logoutUser()
+    } catch {
+      // ignore network errors on logout
+    }
+    logout()
+    navigate('/login')
+  }
 
   return (
     <>
@@ -108,10 +123,16 @@ export default function Header({
                   <ChevronDown size={14} />
                 </button>
                 {accountOpen && (
-                  <div className="absolute right-0 top-9 w-44 rounded-sm border border-[#D9CFBB] bg-[#FBF8F2] py-1 shadow-lg">
+                  <div className="absolute right-0 top-9 w-48 rounded-sm border border-[#D9CFBB] bg-[#FBF8F2] py-1 shadow-lg">
+                    <div className="border-b border-[#D9CFBB] px-4 py-2">
+                      <p className="text-sm font-medium text-[#2B2620]">{user.name}</p>
+                      {user.email && <p className="text-[11px] text-[#9A9284] truncate">{user.email}</p>}
+                    </div>
                     <Link to="/account" className="block px-4 py-2 text-sm text-[#2B2620] hover:bg-[#EEE7D8]" onClick={() => setAccountOpen(false)}>My Account</Link>
                     <Link to="/orders" className="block px-4 py-2 text-sm text-[#2B2620] hover:bg-[#EEE7D8]" onClick={() => setAccountOpen(false)}>My Orders</Link>
-                    <Link to="/login" className="block px-4 py-2 text-sm text-[#5C3A4B] hover:bg-[#EEE7D8]" onClick={() => setAccountOpen(false)}>Sign Out</Link>
+                    <button type="button" onClick={handleSignOut} className="block w-full px-4 py-2 text-left text-sm text-[#5C3A4B] hover:bg-[#EEE7D8] cursor-pointer">
+                      Sign Out
+                    </button>
                   </div>
                 )}
               </div>

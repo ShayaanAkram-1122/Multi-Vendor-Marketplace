@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ShoppingBag, Mail, Lock, ArrowLeft, Eye, EyeOff } from 'lucide-react'
-import { loginUser, storeAccessToken } from '../services/authApi'
+import { loginUser } from '../services/authApi'
+import { useAuth } from '../context/AuthContext'
 
 const FONT_IMPORT = `@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');`
 
 export default function Login() {
   const navigate = useNavigate()
+  const { setSession } = useAuth()
   const [form, setForm] = useState({ email: '', password: '' })
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
@@ -33,7 +35,7 @@ export default function Login() {
         email: form.email.trim(),
         password: form.password,
       })
-      storeAccessToken(data.accessToken)
+      setSession(data)
       setSubmitted(true)
       navigate('/shop')
     } catch (err) {
