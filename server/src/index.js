@@ -4,10 +4,11 @@ const express = require('express')
 const cors = require('cors')
 const cookieParser = require('cookie-parser')
 const authRoutes = require('./routes/auth')
+const productRoutes = require('./routes/products')
 const { pool } = require('./config/db')
 
 const app = express()
-const PORT = process.env.PORT || 5000
+const PORT = process.env.PORT || 4000
 
 app.set('trust proxy', 1)
 
@@ -28,6 +29,7 @@ app.get('/api/health', async (_req, res) => {
 })
 
 app.use('/api/auth', authRoutes)
+app.use('/api/products', productRoutes)
 
 app.use((err, _req, res, _next) => {
   console.error(err)

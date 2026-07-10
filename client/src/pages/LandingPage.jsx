@@ -5,6 +5,7 @@ import {
   TrendingUp, ArrowRight, Menu, X, Heart, BadgeCheck, Wallet, Bell,
   Quote, ChevronRight,
 } from 'lucide-react'
+import { fetchProducts, fetchAiPicks } from '../services/productsApi'
 
 const GLOBAL_CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
@@ -41,17 +42,6 @@ const GLOBAL_CSS = `
 `
 
 const CATEGORIES = ['All', 'Home & Living', 'Jewelry', 'Art & Prints', 'Vintage', 'Wellness', 'Stationery']
-
-const PRODUCTS = [
-  { id: 1, name: 'Hand-thrown stoneware mug', seller: 'Marrow Ceramics', price: 32, rating: 4.9, category: 'Home & Living', aiPick: true, tilt: '-rotate-2' },
-  { id: 2, name: 'Recycled silver hoop earrings', seller: 'Foundry & Co.', price: 48, rating: 4.8, category: 'Jewelry', aiPick: false, tilt: 'rotate-1' },
-  { id: 3, name: 'Riso-print botanical set', seller: 'Paper Weeds Studio', price: 24, rating: 5.0, category: 'Art & Prints', aiPick: true, tilt: '-rotate-1' },
-  { id: 4, name: '1970s brass table lamp', seller: 'Late Bloom Vintage', price: 96, rating: 4.7, category: 'Vintage', aiPick: false, tilt: 'rotate-2' },
-  { id: 5, name: 'Lavender & oat soap bar', seller: 'Hollow Creek Apothecary', price: 12, rating: 4.9, category: 'Wellness', aiPick: true, tilt: '-rotate-2' },
-  { id: 6, name: 'Letterpress notebook, ruled', seller: 'Type & Twine', price: 18, rating: 4.8, category: 'Stationery', aiPick: false, tilt: 'rotate-1' },
-  { id: 7, name: 'Woven wall hanging, small', seller: 'Marrow Ceramics', price: 56, rating: 4.9, category: 'Home & Living', aiPick: false, tilt: '-rotate-1' },
-  { id: 8, name: 'Freshwater pearl ring', seller: 'Foundry & Co.', price: 39, rating: 4.6, category: 'Jewelry', aiPick: true, tilt: 'rotate-2' },
-]
 
 const TESTIMONIALS = [
   { quote: "Vendora recommended a print shop I'd never have found on my own — three of my favorite things on the wall came from there.", name: 'Priya N.', role: 'Buyer since 2024' },
@@ -104,15 +94,26 @@ function StarRow({ rating }) {
 
 function TicketCard({ product }) {
   return (
-    <div className={`relative shrink-0 w-56 bg-[#FFFDF9] border border-[#E7DFD0] border-t-2 border-t-dashed border-t-[#C9B896] rounded-sm shadow-[0_14px_28px_-16px_rgba(43,25,12,0.4)] p-4 ${product.tilt} hover:rotate-0 hover:-translate-y-1 transition-all duration-300`}>
+    <div className={`relative shrink-0 w-56 bg-[#FFFDF9] border border-[#E7DFD0] border-t-2 border-t-dashed border-t-[#C9B896] rounded-sm shadow-[0_14px_28px_-16px_rgba(43,25,12,0.4)] p-4 ${product.tilt || 'rotate-1'} hover:rotate-0 hover:-translate-y-1 transition-all duration-300`}>
       <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-[#FAF7F2] border border-[#C9B896]" />
       {product.aiPick && (
-        <div className="absolute -top-3 right-3 bg-[#5B2145] text-[#F4E9EE] text-[10px] font-mono tracking-wide uppercase px-2 py-1 rounded-sm flex items-center gap-1 shadow-sm">
+        <div className="absolute -top-3 right-3 z-10 bg-[#5B2145] text-[#F4E9EE] text-[10px] font-mono tracking-wide uppercase px-2 py-1 rounded-sm flex items-center gap-1 shadow-sm">
           <Sparkles className="w-3 h-3" /> AI Pick
         </div>
       )}
-      <div className="h-28 rounded-sm bg-gradient-to-br from-[#EFE6D8] to-[#E2D5BE] mb-3 flex items-center justify-center text-[#B8A98C]">
-        <ShoppingBag className="w-8 h-8" />
+      <div className="h-28 rounded-sm bg-gradient-to-br from-[#EFE6D8] to-[#E2D5BE] mb-3 overflow-hidden">
+        {product.image ? (
+          <img
+            src={product.image}
+            alt={product.name}
+            loading="lazy"
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-[#B8A98C]">
+            <ShoppingBag className="w-8 h-8" />
+          </div>
+        )}
       </div>
       <p className="font-['Fraunces'] text-[15px] leading-snug text-[#231F1C] mb-1">{product.name}</p>
       <p className="text-xs text-[#8A7F6E] mb-2">{product.seller}</p>
@@ -130,6 +131,37 @@ export default function LandingPage() {
   const [query, setQuery] = useState('')
   const [subscribed, setSubscribed] = useState(false)
   const [activeStory, setActiveStory] = useState(null)
+  const [products, setProducts] = useState([])
+  const [heroProducts, setHeroProducts] = useState([])
+  const [productsLoading, setProductsLoading] = useState(true)
+  const [productsError, setProductsError] = useState('')
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function load() {
+      setProductsLoading(true)
+      setProductsError('')
+      try {
+        const [catalog, picks] = await Promise.all([
+          fetchProducts({ limit: 300 }),
+          fetchAiPicks(8),
+        ])
+        if (cancelled) return
+        setProducts(catalog.products || [])
+        const hero = (picks.products?.length ? picks.products : catalog.products || []).slice(0, 4)
+        setHeroProducts(hero)
+      } catch (err) {
+        if (!cancelled) setProductsError(err.message || 'Could not load products')
+      } finally {
+        if (!cancelled) setProductsLoading(false)
+      }
+    }
+
+    load()
+    return () => { cancelled = true }
+  }, [])
+
   useEffect(() => {
     if (!activeStory) return
     const onKey = (e) => { if (e.key === 'Escape') setActiveStory(null) }
@@ -142,14 +174,19 @@ export default function LandingPage() {
   }, [activeStory])
 
   const filtered = useMemo(() => {
-    return PRODUCTS.filter((p) => {
+    return products.filter((p) => {
       const inCat = category === 'All' || p.category === category
-      const inQuery = p.name.toLowerCase().includes(query.toLowerCase()) || p.seller.toLowerCase().includes(query.toLowerCase())
+      const inQuery =
+        !query.trim()
+        || p.name.toLowerCase().includes(query.toLowerCase())
+        || p.seller.toLowerCase().includes(query.toLowerCase())
       return inCat && inQuery
     })
-  }, [category, query])
+  }, [products, category, query])
 
+  const shopProducts = useMemo(() => filtered.slice(0, 16), [filtered])
   const marqueeItems = [...CATEGORIES.slice(1), ...CATEGORIES.slice(1)]
+  const aiThumbnails = heroProducts.length ? heroProducts.slice(0, 3) : products.slice(0, 3)
 
   return (
     <div className="min-h-screen bg-[#FAF7F2] text-[#231F1C]" style={{ fontFamily: "'Inter', sans-serif" }}>
@@ -241,7 +278,13 @@ export default function LandingPage() {
 
         <Reveal delay={120}>
           <div className="flex gap-4 overflow-x-auto pb-4 md:pb-0 md:flex-wrap md:justify-end -mr-6 md:mr-0 pl-6 md:pl-0 pt-3">
-            {PRODUCTS.slice(0, 4).map((p) => <TicketCard key={p.id} product={p} />)}
+            {productsLoading && !heroProducts.length ? (
+              [0, 1, 2, 3].map((i) => (
+                <div key={i} className="shrink-0 w-56 h-52 rounded-sm bg-[#EFE6D8]/80 animate-pulse" />
+              ))
+            ) : (
+              heroProducts.map((p) => <TicketCard key={p.id} product={p} />)
+            )}
           </div>
         </Reveal>
       </section>
@@ -348,36 +391,64 @@ export default function LandingPage() {
           </div>
         </Reveal>
 
-        {filtered.length === 0 ? (
-          <p className="text-sm text-[#8A7F6E] py-12 text-center">No matches yet — try another search or category.</p>
-        ) : (
+        {productsError && (
+          <p className="text-sm text-[#8B2E2E] py-4 text-center">{productsError}</p>
+        )}
+
+        {productsLoading ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-5">
-            {filtered.map((p, i) => (
-              <Reveal key={p.id} delay={(i % 4) * 60}>
-                <div className="group bg-white border border-[#E7DFD0] rounded-md overflow-hidden hover:shadow-[0_14px_30px_-18px_rgba(43,25,12,0.4)] hover:-translate-y-0.5 transition-all">
-                  <div className="relative h-32 bg-gradient-to-br from-[#EFE6D8] to-[#E2D5BE] flex items-center justify-center text-[#B8A98C]">
-                    <ShoppingBag className="w-7 h-7" />
-                    <button type="button" aria-label={`Save ${p.name}`} className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/90 flex items-center justify-center text-[#8A7F6E] hover:text-[#5B2145] opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Heart className="w-3.5 h-3.5" />
-                    </button>
-                    {p.aiPick && (
-                      <span className="absolute bottom-2 left-2 text-[9px] font-mono uppercase tracking-wide bg-[#5B2145] text-[#F4E9EE] px-1.5 py-0.5 rounded-sm flex items-center gap-1">
-                        <Sparkles className="w-2.5 h-2.5" /> AI pick
-                      </span>
-                    )}
-                  </div>
-                  <div className="p-3">
-                    <p className="text-[13px] leading-snug mb-1">{p.name}</p>
-                    <p className="text-[11px] text-[#8A7F6E] mb-2">{p.seller}</p>
-                    <div className="flex items-center justify-between">
-                      <span className="font-mono text-[13px] text-[#5B2145]">${p.price}</span>
-                      <StarRow rating={p.rating} />
-                    </div>
-                  </div>
-                </div>
-              </Reveal>
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="h-52 rounded-md bg-[#EFE6D8]/80 animate-pulse" />
             ))}
           </div>
+        ) : shopProducts.length === 0 ? (
+          <p className="text-sm text-[#8A7F6E] py-12 text-center">No matches yet — try another search or category.</p>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-5">
+              {shopProducts.map((p, i) => (
+                <Reveal key={p.id} delay={(i % 4) * 60}>
+                  <div className="group bg-white border border-[#E7DFD0] rounded-md overflow-hidden hover:shadow-[0_14px_30px_-18px_rgba(43,25,12,0.4)] hover:-translate-y-0.5 transition-all">
+                    <div className="relative h-36 bg-gradient-to-br from-[#EFE6D8] to-[#E2D5BE] overflow-hidden">
+                      {p.image ? (
+                        <img
+                          src={p.image}
+                          alt={p.name}
+                          loading="lazy"
+                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-[#B8A98C]">
+                          <ShoppingBag className="w-7 h-7" />
+                        </div>
+                      )}
+                      <button type="button" aria-label={`Save ${p.name}`} className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/90 flex items-center justify-center text-[#8A7F6E] hover:text-[#5B2145] opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Heart className="w-3.5 h-3.5" />
+                      </button>
+                      {p.aiPick && (
+                        <span className="absolute bottom-2 left-2 text-[9px] font-mono uppercase tracking-wide bg-[#5B2145] text-[#F4E9EE] px-1.5 py-0.5 rounded-sm flex items-center gap-1">
+                          <Sparkles className="w-2.5 h-2.5" /> AI pick
+                        </span>
+                      )}
+                    </div>
+                    <div className="p-3">
+                      <p className="text-[13px] leading-snug mb-1">{p.name}</p>
+                      <p className="text-[11px] text-[#8A7F6E] mb-2">{p.seller}</p>
+                      <div className="flex items-center justify-between">
+                        <span className="font-mono text-[13px] text-[#5B2145]">${p.price}</span>
+                        <StarRow rating={p.rating} />
+                      </div>
+                    </div>
+                  </div>
+                </Reveal>
+              ))}
+            </div>
+            {filtered.length > shopProducts.length && (
+              <p className="mt-6 text-center text-xs font-mono uppercase tracking-widest text-[#8A7F6E]">
+                Showing {shopProducts.length} of {filtered.length} stalls
+              </p>
+            )}
+          </>
         )}
       </section>
 
@@ -398,8 +469,12 @@ export default function LandingPage() {
                 <h4 className="font-['Fraunces'] text-lg mb-2">Recommendations that fit</h4>
                 <p className="text-sm text-[#4A423A] mb-4">Built from what you browse and buy, not just what&apos;s trending.</p>
                 <div className="flex gap-2">
-                  {PRODUCTS.slice(4, 7).map((p) => (
-                    <div key={p.id} className="flex-1 h-14 rounded-sm bg-gradient-to-br from-[#EFE6D8] to-[#E2D5BE]" />
+                  {aiThumbnails.map((p) => (
+                    <div key={p.id} className="flex-1 h-14 rounded-sm overflow-hidden bg-gradient-to-br from-[#EFE6D8] to-[#E2D5BE]">
+                      {p.image && (
+                        <img src={p.image} alt="" className="w-full h-full object-cover" loading="lazy" />
+                      )}
+                    </div>
                   ))}
                 </div>
               </div>
