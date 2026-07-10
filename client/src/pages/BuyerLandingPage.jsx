@@ -4,6 +4,7 @@ import HeroFlatlay from '../components/HeroFlatlay'
 import CategoryShelf from '../components/CategoryShelf'
 import ProductCard from '../components/ProductCard'
 import { fetchProducts, getAiPicks, getByCategory } from '../lib/api'
+import { getAccessToken, getMe, clearAccessToken } from '../services/authApi'
 
 const CATEGORIES = ['Home & Living', 'Jewelry', 'Art & Prints', 'Vintage', 'Wellness', 'Stationery']
 
@@ -18,12 +19,24 @@ export default function BuyerLandingPage() {
   const [loading, setLoading] = useState(true)
   const [aiPicks, setAiPicks] = useState([])
   const [shelves, setShelves] = useState({})
+  const [user, setUser] = useState(null)
 
   useEffect(() => {
     getAiPicks(10).then(setAiPicks)
     Promise.all(
       CATEGORIES.map(async (cat) => [cat, await getByCategory(cat, 10)]),
     ).then((entries) => setShelves(Object.fromEntries(entries)))
+  }, [])
+
+  useEffect(() => {
+    const token = getAccessToken()
+    if (!token) return
+    getMe(token)
+      .then((data) => setUser({ name: data.user?.name || 'Buyer' }))
+      .catch(() => {
+        clearAccessToken()
+        setUser(null)
+      })
   }, [])
 
   useEffect(() => {
@@ -43,7 +56,11 @@ export default function BuyerLandingPage() {
       <Header
         activeCategory={activeCategory}
         onSelectCategory={setActiveCategory}
+        onSearch={setSearch}
         cartCount={0}
+        wishlistCount={0}
+        notificationCount={0}
+        user={user}
       />
 
       <HeroFlatlay featured={aiPicks} onSearch={setSearch} />

@@ -1,53 +1,161 @@
-import { Heart, ShoppingBag, User } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { Heart, ShoppingBag, Bell, Search, Menu, ChevronDown } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import UtilityBar from './UtilityBar'
+import MobileMenu from './MobileMenu'
 
 const CATEGORIES = ['Home & Living', 'Jewelry', 'Art & Prints', 'Vintage', 'Wellness', 'Stationery']
 
-export default function Header({ activeCategory, onSelectCategory, cartCount = 0 }) {
+export default function Header({
+  activeCategory,
+  onSelectCategory,
+  onSearch,
+  cartCount = 0,
+  wishlistCount = 0,
+  notificationCount = 0,
+  user = null,
+}) {
+  const [mobileOpen, setMobileOpen] = useState(false)
+  const [accountOpen, setAccountOpen] = useState(false)
+  const accountRef = useRef(null)
+
+  useEffect(() => {
+    if (!accountOpen) return
+    const onClick = (e) => {
+      if (accountRef.current && !accountRef.current.contains(e.target)) {
+        setAccountOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', onClick)
+    return () => document.removeEventListener('mousedown', onClick)
+  }, [accountOpen])
+
   return (
-    <header className="sticky top-0 z-30 border-b border-[#D9CFBB] bg-[#FBF8F2]/95 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
-        <Link to="/" className="font-['Fraunces'] text-2xl italic text-[#2B2620] hover:text-[#5C3A4B] transition-colors">
-          Vendora
-        </Link>
+    <>
+      <UtilityBar />
 
-        <div className="flex items-center gap-5 text-[#2B2620]">
-          <button type="button" aria-label="Wishlist" className="hover:text-[#5C3A4B] cursor-pointer">
-            <Heart size={20} />
+      <header className="sticky top-0 z-30 border-b border-[#D9CFBB] bg-[#FBF8F2]/95 backdrop-blur">
+        <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3 sm:px-6">
+          <button
+            type="button"
+            className="sm:hidden cursor-pointer"
+            onClick={() => setMobileOpen(true)}
+            aria-label="Open menu"
+          >
+            <Menu size={22} className="text-[#2B2620]" />
           </button>
-          <button type="button" aria-label="Bag" className="relative hover:text-[#5C3A4B] cursor-pointer">
-            <ShoppingBag size={20} />
-            {cartCount > 0 && (
-              <span className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#D6A24A] text-[9px] font-bold text-[#2B2620]">
-                {cartCount}
-              </span>
-            )}
-          </button>
-          <Link to="/login" aria-label="Account" className="hover:text-[#5C3A4B] cursor-pointer">
-            <User size={20} />
+
+          <Link to="/shop" className="shrink-0 font-['Fraunces'] text-2xl italic text-[#2B2620] hover:text-[#5C3A4B] transition-colors">
+            Vendora
           </Link>
-        </div>
-      </div>
 
-      <nav className="mx-auto flex max-w-6xl gap-2 overflow-x-auto px-4 pb-3 sm:px-6">
-        {CATEGORIES.map((cat) => {
-          const active = activeCategory === cat
-          return (
-            <button
-              key={cat}
-              type="button"
-              onClick={() => onSelectCategory(active ? null : cat)}
-              className={`shrink-0 rounded-full border px-3.5 py-1.5 font-mono text-xs uppercase tracking-wide transition-colors cursor-pointer ${
-                active
-                  ? 'border-[#6E7856] bg-[#6E7856] text-[#EEE7D8]'
-                  : 'border-[#D9CFBB] bg-transparent text-[#4A443A] hover:border-[#6E7856] hover:text-[#6E7856]'
-              }`}
-            >
-              {cat}
+          <form
+            onSubmit={(e) => {
+              e.preventDefault()
+              onSearch?.(new FormData(e.target).get('q'))
+            }}
+            className="hidden flex-1 items-center gap-2 rounded-sm border border-[#D9CFBB] bg-white px-3 py-1.5 sm:flex"
+          >
+            <Search size={16} className="text-[#9A9284]" />
+            <input
+              name="q"
+              type="text"
+              placeholder="Search products, sellers, categories..."
+              className="w-full bg-transparent text-sm text-[#2B2620] outline-none placeholder:text-[#9A9284]"
+            />
+          </form>
+
+          <div className="ml-auto flex items-center gap-4 text-[#2B2620]">
+            <button type="button" aria-label="Notifications" className="relative hover:text-[#5C3A4B] cursor-pointer">
+              <Bell size={20} />
+              {notificationCount > 0 && (
+                <span className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#5C3A4B] text-[9px] font-bold text-[#EEE7D8]">
+                  {notificationCount}
+                </span>
+              )}
             </button>
-          )
-        })}
-      </nav>
-    </header>
+
+            <button type="button" aria-label="Wishlist" className="relative hover:text-[#5C3A4B] cursor-pointer">
+              <Heart size={20} />
+              {wishlistCount > 0 && (
+                <span className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#D6A24A] text-[9px] font-bold text-[#2B2620]">
+                  {wishlistCount}
+                </span>
+              )}
+            </button>
+
+            <button type="button" aria-label="Bag" className="relative hover:text-[#5C3A4B] cursor-pointer">
+              <ShoppingBag size={20} />
+              {cartCount > 0 && (
+                <span className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#D6A24A] text-[9px] font-bold text-[#2B2620]">
+                  {cartCount}
+                </span>
+              )}
+            </button>
+
+            {user ? (
+              <div className="relative" ref={accountRef}>
+                <button
+                  type="button"
+                  onClick={() => setAccountOpen((v) => !v)}
+                  className="flex items-center gap-1.5 hover:text-[#5C3A4B] cursor-pointer"
+                >
+                  <img
+                    src={user.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=6E7856&color=EEE7D8`}
+                    alt={user.name}
+                    className="h-7 w-7 rounded-full border border-[#D9CFBB] object-cover"
+                  />
+                  <ChevronDown size={14} />
+                </button>
+                {accountOpen && (
+                  <div className="absolute right-0 top-9 w-44 rounded-sm border border-[#D9CFBB] bg-[#FBF8F2] py-1 shadow-lg">
+                    <Link to="/account" className="block px-4 py-2 text-sm text-[#2B2620] hover:bg-[#EEE7D8]" onClick={() => setAccountOpen(false)}>My Account</Link>
+                    <Link to="/orders" className="block px-4 py-2 text-sm text-[#2B2620] hover:bg-[#EEE7D8]" onClick={() => setAccountOpen(false)}>My Orders</Link>
+                    <Link to="/login" className="block px-4 py-2 text-sm text-[#5C3A4B] hover:bg-[#EEE7D8]" onClick={() => setAccountOpen(false)}>Sign Out</Link>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="hidden items-center gap-2 sm:flex">
+                <Link to="/login" className="font-mono text-xs uppercase tracking-wide text-[#2B2620] hover:text-[#5C3A4B]">
+                  Sign In
+                </Link>
+                <Link to="/register" className="rounded-sm bg-[#5C3A4B] px-3 py-1.5 font-mono text-xs uppercase tracking-wide text-[#EEE7D8] hover:bg-[#2B2620]">
+                  Register
+                </Link>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <nav className="mx-auto hidden max-w-6xl gap-2 overflow-x-auto px-4 pb-3 sm:flex sm:px-6">
+          {CATEGORIES.map((cat) => {
+            const active = activeCategory === cat
+            return (
+              <button
+                key={cat}
+                type="button"
+                onClick={() => onSelectCategory(active ? null : cat)}
+                className={`shrink-0 rounded-full border px-3.5 py-1.5 font-mono text-xs uppercase tracking-wide transition-colors cursor-pointer ${
+                  active
+                    ? 'border-[#6E7856] bg-[#6E7856] text-[#EEE7D8]'
+                    : 'border-[#D9CFBB] bg-transparent text-[#4A443A] hover:border-[#6E7856] hover:text-[#6E7856]'
+                }`}
+              >
+                {cat}
+              </button>
+            )
+          })}
+        </nav>
+      </header>
+
+      <MobileMenu
+        open={mobileOpen}
+        onClose={() => setMobileOpen(false)}
+        activeCategory={activeCategory}
+        onSelectCategory={onSelectCategory}
+        user={user}
+      />
+    </>
   )
 }
