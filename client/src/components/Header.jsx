@@ -50,7 +50,7 @@ export default function Header({
       <UtilityBar />
 
       <header className="sticky top-0 z-30 border-b border-[#D9CFBB] bg-[#FBF8F2]/95 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3 sm:px-6">
+        <div className="mx-auto flex max-w-6xl items-center gap-5 px-4 py-3 sm:gap-8 sm:px-6">
           <button
             type="button"
             className="sm:hidden cursor-pointer"
@@ -60,8 +60,14 @@ export default function Header({
             <Menu size={22} className="text-[#2B2620]" />
           </button>
 
-          <Link to="/shop" className="shrink-0 font-['Fraunces'] text-2xl italic text-[#2B2620] hover:text-[#5C3A4B] transition-colors">
-            Vendora
+          <Link
+            to="/shop"
+            className="flex shrink-0 items-center gap-2.5 text-[#2B2620] hover:text-[#5C3A4B] transition-colors"
+          >
+            <span className="flex h-8 w-8 items-center justify-center rounded-sm bg-[#5C3A4B] text-[#EEE7D8]">
+              <ShoppingBag size={16} />
+            </span>
+            <span className="font-['Fraunces'] text-2xl italic tracking-tight">Vendora</span>
           </Link>
 
           <form
@@ -69,9 +75,9 @@ export default function Header({
               e.preventDefault()
               onSearch?.(new FormData(e.target).get('q'))
             }}
-            className="hidden flex-1 items-center gap-2 rounded-sm border border-[#D9CFBB] bg-white px-3 py-1.5 sm:flex"
+            className="hidden min-w-0 flex-1 items-center gap-2 rounded-sm border border-[#D9CFBB] bg-white px-3 py-1.5 sm:flex sm:mx-2"
           >
-            <Search size={16} className="text-[#9A9284]" />
+            <Search size={16} className="shrink-0 text-[#9A9284]" />
             <input
               name="q"
               type="text"
@@ -80,7 +86,7 @@ export default function Header({
             />
           </form>
 
-          <div className="ml-auto flex items-center gap-4 text-[#2B2620]">
+          <div className="flex shrink-0 items-center gap-4 text-[#2B2620] sm:gap-5">
             <button type="button" aria-label="Notifications" className="relative hover:text-[#5C3A4B] cursor-pointer">
               <Bell size={20} />
               {notificationCount > 0 && (
