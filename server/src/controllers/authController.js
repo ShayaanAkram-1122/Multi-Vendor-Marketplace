@@ -1,5 +1,6 @@
 const bcrypt = require('bcryptjs')
 const authQueries = require('../db/queries/auth')
+const { sendLoginSuccessEmail } = require('../utils/mail')
 const {
   signAccessToken,
   generateRefreshToken,
@@ -127,6 +128,12 @@ async function login(req, res, next) {
     }
 
     const session = await issueSession(res, user, req)
+
+    // Notify the account owner — do not block login if mail fails
+    sendLoginSuccessEmail(user, clientMeta(req)).catch((err) => {
+      console.error('[mail] login success email failed:', err.message)
+    })
+
     return res.json(session)
   } catch (err) {
     return next(err)
