@@ -3,6 +3,7 @@ import {
   clearAccessToken,
   getAccessToken,
   getMe,
+  refreshSession,
   storeAccessToken,
 } from '../services/authApi'
 
@@ -27,6 +28,16 @@ function writeStoredUser(user) {
   localStorage.setItem(USER_KEY, JSON.stringify(user))
 }
 
+function toPublicUser(user) {
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    avatarUrl: user.avatarUrl || null,
+  }
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => readStoredUser())
   const [loading, setLoading] = useState(true)
@@ -36,13 +47,7 @@ export function AuthProvider({ children }) {
       storeAccessToken(session.accessToken)
     }
     if (session?.user) {
-      const nextUser = {
-        id: session.user.id,
-        name: session.user.name,
-        email: session.user.email,
-        role: session.user.role,
-        avatarUrl: session.user.avatarUrl || null,
-      }
+      const nextUser = toPublicUser(session.user)
       writeStoredUser(nextUser)
       setUser(nextUser)
       return
@@ -63,40 +68,51 @@ export function AuthProvider({ children }) {
 
     async function hydrate() {
       const token = getAccessToken()
-      if (!token) {
-        if (!cancelled) {
-          writeStoredUser(null)
-          setUser(null)
-          setLoading(false)
-        }
+      const cached = readStoredUser()
+
+      // No access token and no cached profile → logged out
+      if (!token && !cached) {
+        if (!cancelled) setLoading(false)
         return
       }
 
-      // Show cached user immediately while we refresh from the API
-      const cached = readStoredUser()
       if (cached && !cancelled) setUser(cached)
 
       try {
-        const data = await getMe(token)
-        if (cancelled) return
-        const nextUser = {
-          id: data.user.id,
-          name: data.user.name,
-          email: data.user.email,
-          role: data.user.role,
-          avatarUrl: data.user.avatarUrl || null,
+        let accessToken = token
+
+        // Access token missing/expired → try refresh cookie first
+        if (!accessToken) {
+          const refreshed = await refreshSession()
+          accessToken = refreshed.accessToken
+          storeAccessToken(accessToken)
+          if (refreshed.user && !cancelled) {
+            const nextUser = toPublicUser(refreshed.user)
+            writeStoredUser(nextUser)
+            setUser(nextUser)
+          }
         }
-        writeStoredUser(nextUser)
-        setUser(nextUser)
+
+        try {
+          const data = await getMe(accessToken)
+          if (cancelled) return
+          const nextUser = toPublicUser(data.user)
+          writeStoredUser(nextUser)
+          setUser(nextUser)
+        } catch {
+          // Access token invalid/expired — rotate via refresh cookie
+          const refreshed = await refreshSession()
+          if (cancelled) return
+          storeAccessToken(refreshed.accessToken)
+          const nextUser = toPublicUser(refreshed.user)
+          writeStoredUser(nextUser)
+          setUser(nextUser)
+        }
       } catch {
         if (!cancelled) {
-          // Keep cached user if token exists but /me briefly fails;
-          // only clear when there is no usable cached profile.
-          if (!cached) {
-            clearAccessToken()
-            writeStoredUser(null)
-            setUser(null)
-          }
+          clearAccessToken()
+          writeStoredUser(null)
+          setUser(null)
         }
       } finally {
         if (!cancelled) setLoading(false)

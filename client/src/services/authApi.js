@@ -55,6 +55,10 @@ export function getMe(accessToken) {
   })
 }
 
+export function refreshSession() {
+  return request('/auth/refresh', { method: 'POST' })
+}
+
 export function storeAccessToken(token) {
   localStorage.setItem('vendora_access_token', token)
 }
