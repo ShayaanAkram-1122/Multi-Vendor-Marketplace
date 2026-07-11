@@ -235,12 +235,20 @@ export default function Register() {
           )}
 
           {!submitted && (
-            <p className="mt-6 text-center text-sm text-[#8A7F6E]">
-              Already have an account?{' '}
-              <Link to="/login" className="text-[#5B2145] font-medium cursor-pointer hover:underline">
-                Log in
-              </Link>
-            </p>
+            <>
+              <p className="mt-6 text-center text-sm text-[#8A7F6E]">
+                Already have an account?{' '}
+                <Link to="/login" className="text-[#5B2145] font-medium cursor-pointer hover:underline">
+                  Log in
+                </Link>
+              </p>
+              <p className="mt-3 text-center text-sm text-[#8A7F6E]">
+                Need admin access?{' '}
+                <Link to="/admin/register" className="text-[#5B2145] font-medium cursor-pointer hover:underline">
+                  Request an admin account
+                </Link>
+              </p>
+            </>
           )}
         </div>
       </main>

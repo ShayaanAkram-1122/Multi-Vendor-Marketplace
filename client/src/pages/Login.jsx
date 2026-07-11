@@ -151,12 +151,20 @@ export default function Login() {
           )}
 
           {!submitted && (
-            <p className="mt-6 text-center text-sm text-[#8A7F6E]">
-              New here?{' '}
-              <Link to="/register" className="text-[#5B2145] font-medium cursor-pointer hover:underline">
-                Create an account
-              </Link>
-            </p>
+            <>
+              <p className="mt-6 text-center text-sm text-[#8A7F6E]">
+                New here?{' '}
+                <Link to="/register" className="text-[#5B2145] font-medium cursor-pointer hover:underline">
+                  Create an account
+                </Link>
+              </p>
+              <p className="mt-3 text-center text-sm text-[#8A7F6E]">
+                Platform admin?{' '}
+                <Link to="/admin/login" className="text-[#5B2145] font-medium cursor-pointer hover:underline">
+                  Admin sign in
+                </Link>
+              </p>
+            </>
           )}
         </div>
       </main>

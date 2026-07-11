@@ -13,6 +13,12 @@ const {
 const ALLOWED_ROLES = new Set(['buyer', 'seller'])
 const BCRYPT_ROUNDS = Number(process.env.BCRYPT_ROUNDS || 12)
 
+function isValidAdminInvite(inviteCode) {
+  const expected = String(process.env.ADMIN_INVITE_CODE || '').trim()
+  if (!expected) return false
+  return String(inviteCode || '').trim() === expected
+}
+
 function publicUser(user) {
   return {
     id: user.id,
@@ -60,6 +66,7 @@ async function register(req, res, next) {
     const email = String(req.body.email || '').trim().toLowerCase()
     const password = String(req.body.password || '')
     const role = String(req.body.role || 'buyer').toLowerCase()
+    const inviteCode = req.body.inviteCode
 
     if (!name || !email || !password) {
       return res.status(400).json({ message: 'Name, email, and password are required' })
@@ -69,7 +76,11 @@ async function register(req, res, next) {
       return res.status(400).json({ message: 'Password must be at least 8 characters' })
     }
 
-    if (!ALLOWED_ROLES.has(role)) {
+    if (role === 'admin') {
+      if (!isValidAdminInvite(inviteCode)) {
+        return res.status(403).json({ message: 'Invalid or missing admin invite code' })
+      }
+    } else if (!ALLOWED_ROLES.has(role)) {
       return res.status(400).json({ message: 'Role must be buyer or seller' })
     }
 
