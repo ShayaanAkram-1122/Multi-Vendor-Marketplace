@@ -39,20 +39,6 @@ export default function ProductCard({ product, size = 'default' }) {
           </div>
         )}
 
-        <button
-          type="button"
-          onClick={handleFavorite}
-          aria-label={favorited ? `Remove ${name} from favourites` : `Add ${name} to favourites`}
-          aria-pressed={favorited}
-          className={`absolute right-2 top-2 z-10 rounded-full border p-1.5 transition-all cursor-pointer ${
-            favorited
-              ? 'border-[#5C3A4B] bg-[#5C3A4B] text-[#EEE7D8]'
-              : 'border-[#D9CFBB] bg-[#FBF8F2]/95 text-[#5C3A4B] hover:border-[#5C3A4B]'
-          }`}
-        >
-          <Heart size={14} fill={favorited ? 'currentColor' : 'none'} />
-        </button>
-
         <div className="aspect-square overflow-hidden bg-[#E4DCC8]">
           {image ? (
             <img
@@ -76,13 +62,28 @@ export default function ProductCard({ product, size = 'default' }) {
               <Star size={12} fill="#D6A24A" stroke="#D6A24A" />
               {rating}
             </span>
-            <button
-              type="button"
-              aria-label={`Add ${name} to bag`}
-              className="rounded-full bg-[#2B2620] p-1.5 text-[#EEE7D8] opacity-0 transition-opacity duration-200 group-hover:opacity-100 hover:bg-[#5C3A4B] cursor-pointer"
-            >
-              <ShoppingBag size={14} />
-            </button>
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={handleFavorite}
+                aria-label={favorited ? `Remove ${name} from favourites` : `Add ${name} to favourites`}
+                aria-pressed={favorited}
+                className={`rounded-full border p-1.5 transition-colors cursor-pointer ${
+                  favorited
+                    ? 'border-[#5C3A4B] bg-[#5C3A4B] text-[#EEE7D8]'
+                    : 'border-[#D9CFBB] bg-transparent text-[#5C3A4B] hover:border-[#5C3A4B]'
+                }`}
+              >
+                <Heart size={14} fill={favorited ? 'currentColor' : 'none'} />
+              </button>
+              <button
+                type="button"
+                aria-label={`Add ${name} to bag`}
+                className="rounded-full bg-[#2B2620] p-1.5 text-[#EEE7D8] opacity-0 transition-opacity duration-200 group-hover:opacity-100 hover:bg-[#5C3A4B] cursor-pointer"
+              >
+                <ShoppingBag size={14} />
+              </button>
+            </div>
           </div>
         </div>
       </div>
