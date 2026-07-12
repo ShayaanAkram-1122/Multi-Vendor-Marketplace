@@ -182,7 +182,7 @@ vendora/
 
 ### Week of July 6–12, 2026
 
-Focus this week: auth, buyer shop experience, admin access, and transactional email.
+Focus this week: auth, buyer shop experience, admin access, transactional email, favourites, and in-app notifications.
 
 #### Authentication & sessions
 - Buyer/seller **register** and **login** with bcrypt password hashing
@@ -210,6 +210,14 @@ Focus this week: auth, buyer shop experience, admin access, and transactional em
 - **Password-changed confirmation email** after a successful reset
 - Branded HTML email templates (Vendora header, CTAs for reset / sign-in / shop)
 - Forgot-password UI now shows “Check your email” instead of exposing the reset token in the browser
+
+#### Favourites & notifications
+- Heart button on product cards to save / unsave favourites (placed next to rating so it doesn’t overlap the price tag)
+- Header **favourites** icon with count badge and a popup list of saved products
+- Favouriting a product creates an in-app **notification** (“Added to favourites”)
+- Header **bell** popup with unread badge count
+- Per-notification **Mark read** / **Mark unread**, plus **Mark all read** and **Clear all**
+- Favourites and notifications persist in `localStorage` (per signed-in user or guest)
 
 #### Still ahead
 - Seller dashboard, Stripe checkout, Socket.IO chat, OpenAI descriptions/recommendations
