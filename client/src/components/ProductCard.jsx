@@ -1,8 +1,17 @@
-import { Sparkles, Star, ShoppingBag } from 'lucide-react'
+import { Sparkles, Star, ShoppingBag, Heart } from 'lucide-react'
+import { useShopActivity } from '../context/ShopActivityContext'
 
 export default function ProductCard({ product, size = 'default' }) {
   const { name, seller, price, rating, image, aiPick, tilt } = product
   const width = size === 'compact' ? 'w-56' : 'w-full'
+  const { isFavorite, toggleFavorite } = useShopActivity()
+  const favorited = isFavorite(product.id)
+
+  const handleFavorite = (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    toggleFavorite(product)
+  }
 
   return (
     <div className={`group relative ${width} shrink-0`}>
@@ -29,6 +38,20 @@ export default function ProductCard({ product, size = 'default' }) {
             AI Pick
           </div>
         )}
+
+        <button
+          type="button"
+          onClick={handleFavorite}
+          aria-label={favorited ? `Remove ${name} from favourites` : `Add ${name} to favourites`}
+          aria-pressed={favorited}
+          className={`absolute right-2 top-2 z-10 rounded-full border p-1.5 transition-all cursor-pointer ${
+            favorited
+              ? 'border-[#5C3A4B] bg-[#5C3A4B] text-[#EEE7D8]'
+              : 'border-[#D9CFBB] bg-[#FBF8F2]/95 text-[#5C3A4B] hover:border-[#5C3A4B]'
+          }`}
+        >
+          <Heart size={14} fill={favorited ? 'currentColor' : 'none'} />
+        </button>
 
         <div className="aspect-square overflow-hidden bg-[#E4DCC8]">
           {image ? (

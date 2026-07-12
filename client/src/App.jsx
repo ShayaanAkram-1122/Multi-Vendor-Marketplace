@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
+import { ShopActivityProvider } from './context/ShopActivityContext'
 import LandingPage from './pages/LandingPage'
 import BuyerLandingPage from './pages/BuyerLandingPage'
 import Login from './pages/Login'
@@ -13,19 +14,21 @@ import AdminConsole from './pages/AdminConsole'
 export default function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/shop" element={<BuyerLandingPage />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/admin" element={<AdminConsole />} />
-          <Route path="/admin/login" element={<AdminLogin />} />
-          <Route path="/admin/register" element={<AdminRegister />} />
-        </Routes>
-      </BrowserRouter>
+      <ShopActivityProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/shop" element={<BuyerLandingPage />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/admin" element={<AdminConsole />} />
+            <Route path="/admin/login" element={<AdminLogin />} />
+            <Route path="/admin/register" element={<AdminRegister />} />
+          </Routes>
+        </BrowserRouter>
+      </ShopActivityProvider>
     </AuthProvider>
   )
 }

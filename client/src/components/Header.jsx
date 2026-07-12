@@ -3,7 +3,10 @@ import { Heart, ShoppingBag, Bell, Search, Menu, ChevronDown } from 'lucide-reac
 import { Link, useNavigate } from 'react-router-dom'
 import UtilityBar from './UtilityBar'
 import MobileMenu from './MobileMenu'
+import NotificationsPanel from './NotificationsPanel'
+import FavoritesPanel from './FavoritesPanel'
 import { useAuth } from '../context/AuthContext'
+import { useShopActivity } from '../context/ShopActivityContext'
 import { logoutUser } from '../services/authApi'
 
 const CATEGORIES = ['Home & Living', 'Jewelry', 'Art & Prints', 'Vintage', 'Wellness', 'Stationery']
@@ -13,26 +16,39 @@ export default function Header({
   onSelectCategory,
   onSearch,
   cartCount = 0,
-  wishlistCount = 0,
-  notificationCount = 0,
   user = null,
 }) {
   const navigate = useNavigate()
   const { logout } = useAuth()
+  const {
+    favorites,
+    favoriteCount,
+    removeFavorite,
+    notifications,
+    unreadCount,
+    markAsRead,
+    markAsUnread,
+    markAllAsRead,
+    clearAllNotifications,
+  } = useShopActivity()
+
   const [mobileOpen, setMobileOpen] = useState(false)
   const [accountOpen, setAccountOpen] = useState(false)
+  const [notifsOpen, setNotifsOpen] = useState(false)
+  const [favoritesOpen, setFavoritesOpen] = useState(false)
   const accountRef = useRef(null)
+  const notifsRef = useRef(null)
+  const favoritesRef = useRef(null)
 
   useEffect(() => {
-    if (!accountOpen) return
     const onClick = (e) => {
-      if (accountRef.current && !accountRef.current.contains(e.target)) {
-        setAccountOpen(false)
-      }
+      if (accountRef.current && !accountRef.current.contains(e.target)) setAccountOpen(false)
+      if (notifsRef.current && !notifsRef.current.contains(e.target)) setNotifsOpen(false)
+      if (favoritesRef.current && !favoritesRef.current.contains(e.target)) setFavoritesOpen(false)
     }
     document.addEventListener('mousedown', onClick)
     return () => document.removeEventListener('mousedown', onClick)
-  }, [accountOpen])
+  }, [])
 
   const handleSignOut = async () => {
     setAccountOpen(false)
@@ -87,23 +103,63 @@ export default function Header({
           </form>
 
           <div className="flex shrink-0 items-center gap-4 text-[#2B2620] sm:gap-5">
-            <button type="button" aria-label="Notifications" className="relative hover:text-[#5C3A4B] cursor-pointer">
-              <Bell size={20} />
-              {notificationCount > 0 && (
-                <span className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#5C3A4B] text-[9px] font-bold text-[#EEE7D8]">
-                  {notificationCount}
-                </span>
-              )}
-            </button>
+            <div className="relative" ref={notifsRef}>
+              <button
+                type="button"
+                aria-label="Notifications"
+                aria-expanded={notifsOpen}
+                onClick={() => {
+                  setNotifsOpen((v) => !v)
+                  setFavoritesOpen(false)
+                  setAccountOpen(false)
+                }}
+                className="relative hover:text-[#5C3A4B] cursor-pointer"
+              >
+                <Bell size={20} />
+                {unreadCount > 0 && (
+                  <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#5C3A4B] px-0.5 text-[9px] font-bold text-[#EEE7D8]">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </button>
+              <NotificationsPanel
+                open={notifsOpen}
+                onClose={() => setNotifsOpen(false)}
+                notifications={notifications}
+                unreadCount={unreadCount}
+                onMarkAsRead={markAsRead}
+                onMarkAsUnread={markAsUnread}
+                onMarkAllAsRead={markAllAsRead}
+                onClearAll={clearAllNotifications}
+              />
+            </div>
 
-            <button type="button" aria-label="Wishlist" className="relative hover:text-[#5C3A4B] cursor-pointer">
-              <Heart size={20} />
-              {wishlistCount > 0 && (
-                <span className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#D6A24A] text-[9px] font-bold text-[#2B2620]">
-                  {wishlistCount}
-                </span>
-              )}
-            </button>
+            <div className="relative" ref={favoritesRef}>
+              <button
+                type="button"
+                aria-label="Favourites"
+                aria-expanded={favoritesOpen}
+                onClick={() => {
+                  setFavoritesOpen((v) => !v)
+                  setNotifsOpen(false)
+                  setAccountOpen(false)
+                }}
+                className="relative hover:text-[#5C3A4B] cursor-pointer"
+              >
+                <Heart size={20} fill={favoriteCount > 0 ? 'currentColor' : 'none'} />
+                {favoriteCount > 0 && (
+                  <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#D6A24A] px-0.5 text-[9px] font-bold text-[#2B2620]">
+                    {favoriteCount > 9 ? '9+' : favoriteCount}
+                  </span>
+                )}
+              </button>
+              <FavoritesPanel
+                open={favoritesOpen}
+                onClose={() => setFavoritesOpen(false)}
+                favorites={favorites}
+                onRemove={removeFavorite}
+              />
+            </div>
 
             <button type="button" aria-label="Bag" className="relative hover:text-[#5C3A4B] cursor-pointer">
               <ShoppingBag size={20} />
@@ -118,7 +174,11 @@ export default function Header({
               <div className="relative" ref={accountRef}>
                 <button
                   type="button"
-                  onClick={() => setAccountOpen((v) => !v)}
+                  onClick={() => {
+                    setAccountOpen((v) => !v)
+                    setNotifsOpen(false)
+                    setFavoritesOpen(false)
+                  }}
                   className="flex items-center gap-1.5 hover:text-[#5C3A4B] cursor-pointer"
                 >
                   <img
