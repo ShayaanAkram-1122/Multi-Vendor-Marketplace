@@ -206,10 +206,12 @@ Focus this week: auth, buyer shop experience, admin access, and transactional em
 #### Email (SMTP)
 - Gmail SMTP wiring via Nodemailer (`SMTP_*` env vars)
 - **Successful-login email** sent to the account owner on every login
-- Branded HTML email template (Vendora header, session details, reset-password / shop CTAs)
+- **Forgot-password email** with a secure reset link (`/reset-password?token=…`)
+- **Password-changed confirmation email** after a successful reset
+- Branded HTML email templates (Vendora header, CTAs for reset / sign-in / shop)
+- Forgot-password UI now shows “Check your email” instead of exposing the reset token in the browser
 
 #### Still ahead
-- Password-reset emails (token flow exists; email delivery next)
 - Seller dashboard, Stripe checkout, Socket.IO chat, OpenAI descriptions/recommendations
 
 ---
