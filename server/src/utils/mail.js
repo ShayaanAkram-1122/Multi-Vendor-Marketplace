@@ -220,7 +220,183 @@ async function sendLoginSuccessEmail(user, meta = {}) {
   return sendMail({ to: user.email, subject, text, html })
 }
 
+function brandedEmail({ eyebrow, title, badge, bodyHtml, footerNote }) {
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>${escapeHtml(title)}</title>
+</head>
+<body style="margin:0; padding:0; background-color:#F3EEE1;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#F3EEE1; padding:32px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px; background-color:#FBF8F2; border:1px solid #D9CFBB;">
+          <tr>
+            <td style="background-color:#2B2620; padding:28px 32px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="font-family:Georgia,'Times New Roman',serif; font-size:26px; font-style:italic; color:#EEE7D8;">
+                    Vendora
+                  </td>
+                  <td align="right" style="font-family:Arial,Helvetica,sans-serif; font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:#D6A24A;">
+                    ${escapeHtml(badge || 'Account')}
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td style="height:4px; background-color:#5C3A4B; font-size:0; line-height:0;">&nbsp;</td>
+          </tr>
+          <tr>
+            <td style="padding:36px 32px 28px;">
+              <p style="margin:0 0 8px; font-family:Arial,Helvetica,sans-serif; font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:#5C3A4B;">
+                ${escapeHtml(eyebrow)}
+              </p>
+              <h1 style="margin:0 0 20px; font-family:Georgia,'Times New Roman',serif; font-size:28px; font-weight:normal; color:#2B2620; line-height:1.25;">
+                ${escapeHtml(title)}
+              </h1>
+              ${bodyHtml}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:20px 32px 28px; border-top:1px solid #E7DFD0; background-color:#F3EEE1;">
+              <p style="margin:0; font-family:Arial,Helvetica,sans-serif; font-size:12px; line-height:1.5; color:#9A9284;">
+                ${footerNote}
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `
+}
+
+function clientBaseUrl() {
+  return (process.env.CLIENT_URL || 'http://localhost:5173').replace(/\/$/, '')
+}
+
+async function sendPasswordResetEmail(user, resetToken) {
+  const name = user.name || 'there'
+  const resetUrl = `${clientBaseUrl()}/reset-password?token=${encodeURIComponent(resetToken)}`
+
+  const subject = 'Reset your Vendora password'
+  const text = [
+    `Hi ${name},`,
+    '',
+    'We received a request to reset your Vendora password.',
+    'Open this link to choose a new password (it expires soon):',
+    resetUrl,
+    '',
+    'If you did not request this, you can ignore this email.',
+    '',
+    '— Vendora',
+  ].join('\n')
+
+  const bodyHtml = `
+    <p style="margin:0 0 12px; font-family:Arial,Helvetica,sans-serif; font-size:15px; line-height:1.6; color:#4A443A;">
+      Hi ${escapeHtml(name)},
+    </p>
+    <p style="margin:0 0 28px; font-family:Arial,Helvetica,sans-serif; font-size:15px; line-height:1.6; color:#4A443A;">
+      We received a request to reset the password for your Vendora account. Click the button below to set a new one.
+    </p>
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+      <tr>
+        <td style="background-color:#5C3A4B; border-radius:2px;">
+          <a href="${escapeHtml(resetUrl)}" style="display:inline-block; padding:12px 22px; font-family:Arial,Helvetica,sans-serif; font-size:12px; letter-spacing:0.1em; text-transform:uppercase; text-decoration:none; color:#EEE7D8;">
+            Reset password
+          </a>
+        </td>
+      </tr>
+    </table>
+    <p style="margin:24px 0 0; font-family:Arial,Helvetica,sans-serif; font-size:13px; line-height:1.6; color:#6E6455;">
+      If the button doesn’t work, copy and paste this link into your browser:<br />
+      <a href="${escapeHtml(resetUrl)}" style="color:#5C3A4B; word-break:break-all;">${escapeHtml(resetUrl)}</a>
+    </p>
+    <p style="margin:20px 0 0; font-family:Arial,Helvetica,sans-serif; font-size:13px; line-height:1.6; color:#9A9284;">
+      If you didn’t ask to reset your password, you can safely ignore this email.
+    </p>
+  `
+
+  const html = brandedEmail({
+    eyebrow: 'Password help',
+    title: 'Reset your password',
+    badge: 'Security',
+    bodyHtml,
+    footerNote: `This reset link was requested for ${escapeHtml(user.email)}. It expires after a short time.`,
+  })
+
+  return sendMail({ to: user.email, subject, text, html })
+}
+
+async function sendPasswordChangedEmail(user) {
+  const name = user.name || 'there'
+  const when = new Date().toLocaleString('en-US', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  })
+  const loginUrl = `${clientBaseUrl()}/login`
+
+  const subject = 'Your Vendora password was changed successfully'
+  const text = [
+    `Hi ${name},`,
+    '',
+    'Your Vendora password was changed successfully.',
+    `Time: ${when}`,
+    '',
+    'If you did not make this change, reset your password immediately and contact support.',
+    `${clientBaseUrl()}/forgot-password`,
+    '',
+    '— Vendora',
+  ].join('\n')
+
+  const bodyHtml = `
+    <p style="margin:0 0 12px; font-family:Arial,Helvetica,sans-serif; font-size:15px; line-height:1.6; color:#4A443A;">
+      Hi ${escapeHtml(name)},
+    </p>
+    <p style="margin:0 0 28px; font-family:Arial,Helvetica,sans-serif; font-size:15px; line-height:1.6; color:#4A443A;">
+      Your Vendora password was <strong>changed successfully</strong>. You can now sign in with your new password.
+    </p>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#FFFDF9; border:1px solid #E7DFD0; padding:4px 20px; margin-bottom:28px;">
+      ${detailRow('When', when, true)}
+    </table>
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+      <tr>
+        <td style="background-color:#5C3A4B; border-radius:2px;">
+          <a href="${escapeHtml(loginUrl)}" style="display:inline-block; padding:12px 22px; font-family:Arial,Helvetica,sans-serif; font-size:12px; letter-spacing:0.1em; text-transform:uppercase; text-decoration:none; color:#EEE7D8;">
+            Sign in
+          </a>
+        </td>
+        <td width="12"></td>
+        <td>
+          <a href="${escapeHtml(`${clientBaseUrl()}/forgot-password`)}" style="display:inline-block; padding:12px 18px; font-family:Arial,Helvetica,sans-serif; font-size:12px; letter-spacing:0.1em; text-transform:uppercase; text-decoration:none; color:#5C3A4B; border:1px solid #D9CFBB;">
+            Wasn’t you?
+          </a>
+        </td>
+      </tr>
+    </table>
+  `
+
+  const html = brandedEmail({
+    eyebrow: 'Security update',
+    title: 'Password changed successfully',
+    badge: 'Security',
+    bodyHtml,
+    footerNote: `This confirmation was sent to ${escapeHtml(user.email)} because the account password was updated.`,
+  })
+
+  return sendMail({ to: user.email, subject, text, html })
+}
+
 module.exports = {
   sendMail,
   sendLoginSuccessEmail,
+  sendPasswordResetEmail,
+  sendPasswordChangedEmail,
 }

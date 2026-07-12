@@ -1,6 +1,6 @@
 const bcrypt = require('bcryptjs')
 const authQueries = require('../db/queries/auth')
-const { sendLoginSuccessEmail } = require('../utils/mail')
+const { sendLoginSuccessEmail, sendPasswordResetEmail, sendPasswordChangedEmail } = require('../utils/mail')
 const {
   signAccessToken,
   generateRefreshToken,
@@ -232,9 +232,12 @@ async function forgotPassword(req, res, next) {
       expiresAt,
     })
 
+    sendPasswordResetEmail(user, resetToken).catch((err) => {
+      console.error('[mail] password reset email failed:', err.message)
+    })
+
     return res.json({
-      message: 'Account found. You can now set a new password.',
-      resetToken,
+      message: 'If an account exists for that email, we sent a password reset link.',
       email: user.email,
     })
   } catch (err) {
@@ -271,9 +274,16 @@ async function resetPassword(req, res, next) {
     }
 
     const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS)
-    await authQueries.updateUserPassword(stored.user_id, passwordHash)
+    const updatedUser = await authQueries.updateUserPassword(stored.user_id, passwordHash)
     await authQueries.markPasswordResetTokenUsed(tokenHash)
     await authQueries.revokeAllUserRefreshTokens(stored.user_id)
+
+    sendPasswordChangedEmail(updatedUser || {
+      name: stored.name,
+      email: stored.email,
+    }).catch((err) => {
+      console.error('[mail] password changed email failed:', err.message)
+    })
 
     return res.json({ message: 'Password updated successfully. You can now log in.' })
   } catch (err) {
