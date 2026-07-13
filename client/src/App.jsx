@@ -10,6 +10,7 @@ import ResetPassword from './pages/ResetPassword'
 import AdminLogin from './pages/AdminLogin'
 import AdminRegister from './pages/AdminRegister'
 import AdminConsole from './pages/AdminConsole'
+import NewsletterConfirmed from './pages/NewsletterConfirmed'
 
 export default function App() {
   return (
@@ -23,6 +24,7 @@ export default function App() {
             <Route path="/register" element={<Register />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/newsletter/confirmed" element={<NewsletterConfirmed />} />
             <Route path="/admin" element={<AdminConsole />} />
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/admin/register" element={<AdminRegister />} />

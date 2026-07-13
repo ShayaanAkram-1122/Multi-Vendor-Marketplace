@@ -130,6 +130,9 @@ export default function LandingPage() {
   const [category, setCategory] = useState('All')
   const [query, setQuery] = useState('')
   const [subscribed, setSubscribed] = useState(false)
+  const [newsletterEmail, setNewsletterEmail] = useState('')
+  const [newsletterError, setNewsletterError] = useState('')
+  const [newsletterLoading, setNewsletterLoading] = useState(false)
   const [activeStory, setActiveStory] = useState(null)
   const [products, setProducts] = useState([])
   const [heroProducts, setHeroProducts] = useState([])
@@ -586,20 +589,63 @@ export default function LandingPage() {
             </div>
 
             <form
-              onSubmit={(e) => { e.preventDefault(); setSubscribed(true) }}
-              className="max-w-sm mx-auto flex items-center bg-[#2E2925] border border-[#4A423A] rounded-sm p-1.5"
+              onSubmit={async (e) => {
+                e.preventDefault()
+                setNewsletterError('')
+                if (!newsletterEmail.trim()) {
+                  setNewsletterError('Enter your email to subscribe.')
+                  return
+                }
+                setNewsletterLoading(true)
+                try {
+                  const res = await fetch('/api/newsletter/subscribe', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: newsletterEmail.trim() }),
+                  })
+                  const data = await res.json().catch(() => ({}))
+                  if (!res.ok) throw new Error(data.message || 'Could not subscribe')
+                  setSubscribed(true)
+                } catch (err) {
+                  setNewsletterError(err.message || 'Could not subscribe')
+                } finally {
+                  setNewsletterLoading(false)
+                }
+              }}
+              className="max-w-sm mx-auto"
             >
-              <label className="sr-only" htmlFor="newsletter">Email address</label>
-              <input
-                id="newsletter"
-                type="email"
-                required
-                placeholder="you@email.com"
-                className="flex-1 bg-transparent px-3 py-2 text-sm outline-none placeholder:text-[#8A7F6E]"
-              />
-              <button type="submit" className="shrink-0 bg-[#E8A93B] text-[#231F1C] text-xs font-medium px-3 py-2 rounded-sm hover:bg-[#d99c2f] transition-colors inline-flex items-center gap-1">
-                {subscribed ? 'Subscribed' : 'New arrivals'} <ChevronRight className="w-3.5 h-3.5" />
-              </button>
+              <div className="flex items-center bg-[#2E2925] border border-[#4A423A] rounded-sm p-1.5">
+                <label className="sr-only" htmlFor="newsletter">Email address</label>
+                <input
+                  id="newsletter"
+                  type="email"
+                  required
+                  value={newsletterEmail}
+                  onChange={(e) => {
+                    setNewsletterEmail(e.target.value)
+                    setNewsletterError('')
+                  }}
+                  disabled={subscribed || newsletterLoading}
+                  placeholder="you@email.com"
+                  className="flex-1 bg-transparent px-3 py-2 text-sm outline-none placeholder:text-[#8A7F6E] disabled:opacity-70"
+                />
+                <button
+                  type="submit"
+                  disabled={subscribed || newsletterLoading}
+                  className="shrink-0 bg-[#E8A93B] text-[#231F1C] text-xs font-medium px-3 py-2 rounded-sm hover:bg-[#d99c2f] transition-colors inline-flex items-center gap-1 disabled:opacity-70 cursor-pointer"
+                >
+                  {subscribed ? 'Subscribed' : newsletterLoading ? 'Sending…' : 'New arrivals'}{' '}
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+              {newsletterError && (
+                <p className="mt-2 text-xs text-[#E8A93B]">{newsletterError}</p>
+              )}
+              {subscribed && (
+                <p className="mt-2 text-xs text-[#D8CFC0]">
+                  Check your inbox — confirm if you want regular product &amp; discount updates.
+                </p>
+              )}
             </form>
           </Reveal>
         </div>

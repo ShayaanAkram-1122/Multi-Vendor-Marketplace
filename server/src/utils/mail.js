@@ -394,9 +394,177 @@ async function sendPasswordChangedEmail(user) {
   return sendMail({ to: user.email, subject, text, html })
 }
 
+async function sendSubscriptionSuccessEmail(subscriber) {
+  const email = subscriber.email
+  const clientUrl = clientBaseUrl()
+  const yesLink = `${clientUrl}/api/newsletter/preference?token=${encodeURIComponent(subscriber.preference_token)}&choice=yes`
+  const noLink = `${clientUrl}/api/newsletter/preference?token=${encodeURIComponent(subscriber.preference_token)}&choice=no`
+
+  const subject = 'Subscribed successfully — Vendora'
+  const text = [
+    'You’re subscribed to Vendora.',
+    '',
+    'Would you like regular updates when sellers add new products or discounts?',
+    `Yes: ${yesLink}`,
+    `No: ${noLink}`,
+    '',
+    '— Vendora',
+  ].join('\n')
+
+  const bodyHtml = `
+    <p style="margin:0 0 12px; font-family:Arial,Helvetica,sans-serif; font-size:15px; line-height:1.6; color:#4A443A;">
+      You’re <strong>subscribed successfully</strong> to Vendora new arrivals.
+    </p>
+    <p style="margin:0 0 24px; font-family:Arial,Helvetica,sans-serif; font-size:15px; line-height:1.6; color:#4A443A;">
+      Do you want to receive <strong>regular updates</strong> when sellers add new products or put items on discount — similar to deals alerts on Daraz or Temu?
+    </p>
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+      <tr>
+        <td style="background-color:#5C3A4B; border-radius:2px;">
+          <a href="${escapeHtml(yesLink)}" style="display:inline-block; padding:12px 22px; font-family:Arial,Helvetica,sans-serif; font-size:12px; letter-spacing:0.1em; text-transform:uppercase; text-decoration:none; color:#EEE7D8;">
+            Yes, send updates
+          </a>
+        </td>
+        <td width="12"></td>
+        <td style="border:1px solid #D9CFBB; border-radius:2px;">
+          <a href="${escapeHtml(noLink)}" style="display:inline-block; padding:12px 22px; font-family:Arial,Helvetica,sans-serif; font-size:12px; letter-spacing:0.1em; text-transform:uppercase; text-decoration:none; color:#5C3A4B;">
+            No thanks
+          </a>
+        </td>
+      </tr>
+    </table>
+    <p style="margin:24px 0 0; font-family:Arial,Helvetica,sans-serif; font-size:13px; line-height:1.6; color:#9A9284;">
+      Choosing No means you stay subscribed but won’t get product or discount alert emails.
+    </p>
+  `
+
+  const html = brandedEmail({
+    eyebrow: 'Newsletter',
+    title: 'Subscribed successfully',
+    badge: 'Updates',
+    bodyHtml,
+    footerNote: `This confirmation was sent to ${escapeHtml(email)}.`,
+  })
+
+  return sendMail({ to: email, subject, text, html })
+}
+
+async function sendMarketingPreferenceConfirmedEmail(subscriber, optIn) {
+  const email = subscriber.email
+  const shopUrl = `${clientBaseUrl()}/shop`
+
+  const subject = optIn
+    ? 'Regular updates enabled — Vendora'
+    : 'Regular updates turned off — Vendora'
+
+  const text = optIn
+    ? [
+        'Thanks — you’ll get email alerts when sellers add new products or discounts.',
+        `Shop: ${shopUrl}`,
+        '',
+        '— Vendora',
+      ].join('\n')
+    : [
+        'Got it — we won’t send product or discount update emails.',
+        'You’re still subscribed to Vendora; only regular marketplace alerts are off.',
+        '',
+        '— Vendora',
+      ].join('\n')
+
+  const bodyHtml = optIn
+    ? `
+      <p style="margin:0 0 16px; font-family:Arial,Helvetica,sans-serif; font-size:15px; line-height:1.6; color:#4A443A;">
+        Perfect — <strong>regular updates are on</strong>. We’ll email you when sellers list new products or add discounts.
+      </p>
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td style="background-color:#5C3A4B; border-radius:2px;">
+            <a href="${escapeHtml(shopUrl)}" style="display:inline-block; padding:12px 22px; font-family:Arial,Helvetica,sans-serif; font-size:12px; letter-spacing:0.1em; text-transform:uppercase; text-decoration:none; color:#EEE7D8;">
+              Browse the shop
+            </a>
+          </td>
+        </tr>
+      </table>
+    `
+    : `
+      <p style="margin:0 0 16px; font-family:Arial,Helvetica,sans-serif; font-size:15px; line-height:1.6; color:#4A443A;">
+        Understood — <strong>you won’t receive</strong> new-product or discount alert emails.
+      </p>
+      <p style="margin:0; font-family:Arial,Helvetica,sans-serif; font-size:14px; line-height:1.6; color:#6E6455;">
+        You’re still on Vendora’s subscriber list for account-related messages if needed.
+      </p>
+    `
+
+  const html = brandedEmail({
+    eyebrow: 'Your preference',
+    title: optIn ? 'Updates enabled' : 'Updates turned off',
+    badge: 'Newsletter',
+    bodyHtml,
+    footerNote: `Preference saved for ${escapeHtml(email)}.`,
+  })
+
+  return sendMail({ to: email, subject, text, html })
+}
+
+async function sendCatalogUpdateEmail(subscriber, { type, product }) {
+  const email = subscriber.email
+  const shopUrl = `${clientBaseUrl()}/shop`
+  const isDiscount = type === 'discount'
+  const name = product?.name || 'a new item'
+  const seller = product?.seller || product?.seller_name || 'a seller'
+  const price = product?.price != null ? `$${product.price}` : ''
+  const discount = product?.discountPercent ?? product?.discount_percent
+  const subject = isDiscount
+    ? `Deal alert: ${name} is on discount`
+    : `New on Vendora: ${name}`
+
+  const headline = isDiscount
+    ? `${seller} just added a discount on ${name}${discount ? ` (−${discount}%)` : ''}.`
+    : `${seller} just listed ${name}${price ? ` for ${price}` : ''}.`
+
+  const text = [
+    headline,
+    '',
+    `See it in the shop: ${shopUrl}`,
+    '',
+    '— Vendora',
+  ].join('\n')
+
+  const bodyHtml = `
+    <p style="margin:0 0 12px; font-family:Arial,Helvetica,sans-serif; font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:#D6A24A;">
+      ${isDiscount ? 'Discount alert' : 'New arrival'}
+    </p>
+    <p style="margin:0 0 20px; font-family:Arial,Helvetica,sans-serif; font-size:15px; line-height:1.6; color:#4A443A;">
+      ${escapeHtml(headline)}
+    </p>
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+      <tr>
+        <td style="background-color:#5C3A4B; border-radius:2px;">
+          <a href="${escapeHtml(shopUrl)}" style="display:inline-block; padding:12px 22px; font-family:Arial,Helvetica,sans-serif; font-size:12px; letter-spacing:0.1em; text-transform:uppercase; text-decoration:none; color:#EEE7D8;">
+            View in shop
+          </a>
+        </td>
+      </tr>
+    </table>
+  `
+
+  const html = brandedEmail({
+    eyebrow: 'Marketplace update',
+    title: isDiscount ? 'Something just went on sale' : 'A new product just landed',
+    badge: isDiscount ? 'Deal' : 'New',
+    bodyHtml,
+    footerNote: `Sent to ${escapeHtml(email)} because you opted into regular Vendora updates.`,
+  })
+
+  return sendMail({ to: email, subject, text, html })
+}
+
 module.exports = {
   sendMail,
   sendLoginSuccessEmail,
   sendPasswordResetEmail,
   sendPasswordChangedEmail,
+  sendSubscriptionSuccessEmail,
+  sendMarketingPreferenceConfirmedEmail,
+  sendCatalogUpdateEmail,
 }

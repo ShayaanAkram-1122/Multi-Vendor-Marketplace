@@ -38,7 +38,8 @@ async function listProducts({
       tilt,
       description,
       stock,
-      image
+      image,
+      discount_percent::float AS "discountPercent"
     FROM products
     WHERE ($1::text IS NULL OR category::text = $1)
       AND (
@@ -93,7 +94,8 @@ async function listAiPicks(limit = 8) {
       tilt,
       description,
       stock,
-      image
+      image,
+      discount_percent::float AS "discountPercent"
     FROM products
     WHERE ai_pick = TRUE
     ORDER BY rating DESC, id ASC
@@ -114,8 +116,83 @@ async function listByCategory(category, limit = 10) {
   return result.data
 }
 
+async function nextProductId() {
+  const { rows } = await query(`SELECT COALESCE(MAX(id), 0) + 1 AS next_id FROM products`)
+  return rows[0].next_id
+}
+
+async function createProduct(input) {
+  const id = input.id || (await nextProductId())
+  const { rows } = await query(
+    `
+    INSERT INTO products (
+      id, name, seller_id, seller_name, price, rating, category,
+      ai_pick, tilt, description, stock, image, discount_percent
+    )
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+    RETURNING
+      id,
+      name,
+      seller_name AS seller,
+      price::float AS price,
+      rating::float AS rating,
+      category,
+      ai_pick AS "aiPick",
+      tilt,
+      description,
+      stock,
+      image,
+      discount_percent::float AS "discountPercent"
+    `,
+    [
+      id,
+      input.name,
+      input.sellerId,
+      input.sellerName || input.seller,
+      input.price,
+      input.rating ?? 5,
+      input.category,
+      Boolean(input.aiPick),
+      input.tilt || 'rotate-1',
+      input.description || '',
+      input.stock ?? 0,
+      input.image || '',
+      input.discountPercent ?? 0,
+    ],
+  )
+  return rows[0]
+}
+
+async function updateProductDiscount(productId, discountPercent) {
+  const { rows } = await query(
+    `
+    UPDATE products
+    SET discount_percent = $2,
+        updated_at = NOW()
+    WHERE id = $1
+    RETURNING
+      id,
+      name,
+      seller_name AS seller,
+      price::float AS price,
+      rating::float AS rating,
+      category,
+      ai_pick AS "aiPick",
+      tilt,
+      description,
+      stock,
+      image,
+      discount_percent::float AS "discountPercent"
+    `,
+    [productId, discountPercent],
+  )
+  return rows[0] || null
+}
+
 module.exports = {
   listProducts,
   listAiPicks,
   listByCategory,
+  createProduct,
+  updateProductDiscount,
 }
