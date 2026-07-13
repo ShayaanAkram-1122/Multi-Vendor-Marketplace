@@ -56,7 +56,8 @@ async function setPreference(req, res, next) {
     const wantsRedirect = String(req.query.redirect || '1') !== '0'
 
     if (wantsRedirect && req.method === 'GET') {
-      return res.redirect(`${clientUrl}/newsletter/confirmed?choice=${choice}`)
+      const email = encodeURIComponent(subscriber.email)
+      return res.redirect(`${clientUrl}/newsletter/confirmed?choice=${choice}&email=${email}`)
     }
 
     return res.json({

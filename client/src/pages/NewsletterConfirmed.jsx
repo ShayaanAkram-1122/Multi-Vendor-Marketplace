@@ -1,13 +1,23 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { CheckCircle2, ShoppingBag, BellOff } from 'lucide-react'
+import { writeNewsletterStatus } from '../lib/newsletterStatus'
 
 const FONT_IMPORT = `@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');`
 
 export default function NewsletterConfirmed() {
   const [params] = useSearchParams()
   const choice = (params.get('choice') || '').toLowerCase()
+  const email = (params.get('email') || '').trim().toLowerCase()
   const optedIn = choice === 'yes'
+
+  useEffect(() => {
+    if (choice !== 'yes' && choice !== 'no') return
+    writeNewsletterStatus({
+      email,
+      preference: choice,
+    })
+  }, [choice, email])
 
   const copy = useMemo(() => {
     if (optedIn) {
@@ -19,8 +29,8 @@ export default function NewsletterConfirmed() {
     }
     return {
       icon: BellOff,
-      title: 'Regular updates turned off',
-      body: 'Got it — we won’t send new-product or discount alert emails. You’re still subscribed to Vendora.',
+      title: 'You opted for no',
+      body: 'You won’t get regular product or discount updates. If you want them later, subscribe again from the homepage.',
     }
   }, [optedIn])
 
@@ -43,12 +53,20 @@ export default function NewsletterConfirmed() {
           <p className="mt-4 font-mono text-[11px] uppercase tracking-widest text-[#5C3A4B]">Newsletter</p>
           <h1 className="mt-2 font-['Fraunces'] text-2xl text-[#2B2620]">{copy.title}</h1>
           <p className="mt-3 text-sm leading-relaxed text-[#6E6455]">{copy.body}</p>
-          <Link
-            to="/shop"
-            className="mt-8 inline-block rounded-sm bg-[#2B2620] px-5 py-2.5 font-mono text-xs uppercase tracking-wide text-[#EEE7D8] hover:bg-[#5C3A4B]"
-          >
-            Go to shop
-          </Link>
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+            <Link
+              to="/#newsletter"
+              className="inline-block rounded-sm bg-[#2B2620] px-5 py-2.5 font-mono text-xs uppercase tracking-wide text-[#EEE7D8] hover:bg-[#5C3A4B]"
+            >
+              Back to homepage
+            </Link>
+            <Link
+              to="/shop"
+              className="inline-block rounded-sm border border-[#D9CFBB] px-5 py-2.5 font-mono text-xs uppercase tracking-wide text-[#5C3A4B] hover:bg-[#EEE7D8]"
+            >
+              Go to shop
+            </Link>
+          </div>
         </div>
       </main>
     </div>

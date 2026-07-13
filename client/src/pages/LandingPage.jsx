@@ -6,6 +6,7 @@ import {
   Quote, ChevronRight,
 } from 'lucide-react'
 import { fetchProducts, fetchAiPicks } from '../services/productsApi'
+import { readNewsletterStatus, writeNewsletterStatus } from '../lib/newsletterStatus'
 
 const GLOBAL_CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
@@ -133,11 +134,38 @@ export default function LandingPage() {
   const [newsletterEmail, setNewsletterEmail] = useState('')
   const [newsletterError, setNewsletterError] = useState('')
   const [newsletterLoading, setNewsletterLoading] = useState(false)
+  // pending | yes | no | ''
+  const [newsletterPreference, setNewsletterPreference] = useState('')
   const [activeStory, setActiveStory] = useState(null)
   const [products, setProducts] = useState([])
   const [heroProducts, setHeroProducts] = useState([])
   const [productsLoading, setProductsLoading] = useState(true)
   const [productsError, setProductsError] = useState('')
+
+  useEffect(() => {
+    const saved = readNewsletterStatus()
+    if (!saved?.preference) return
+
+    if (saved.preference === 'yes') {
+      setNewsletterPreference('yes')
+      setSubscribed(true)
+      if (saved.email) setNewsletterEmail(saved.email)
+      return
+    }
+
+    if (saved.preference === 'no') {
+      setNewsletterPreference('no')
+      setSubscribed(false)
+      setNewsletterEmail('')
+      return
+    }
+
+    if (saved.preference === 'pending') {
+      setNewsletterPreference('pending')
+      setSubscribed(true)
+      if (saved.email) setNewsletterEmail(saved.email)
+    }
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -589,6 +617,7 @@ export default function LandingPage() {
             </div>
 
             <form
+              id="newsletter"
               onSubmit={async (e) => {
                 e.preventDefault()
                 setNewsletterError('')
@@ -606,6 +635,11 @@ export default function LandingPage() {
                   const data = await res.json().catch(() => ({}))
                   if (!res.ok) throw new Error(data.message || 'Could not subscribe')
                   setSubscribed(true)
+                  setNewsletterPreference('pending')
+                  writeNewsletterStatus({
+                    email: data.email || newsletterEmail.trim(),
+                    preference: 'pending',
+                  })
                 } catch (err) {
                   setNewsletterError(err.message || 'Could not subscribe')
                 } finally {
@@ -615,35 +649,52 @@ export default function LandingPage() {
               className="max-w-sm mx-auto"
             >
               <div className="flex items-center bg-[#2E2925] border border-[#4A423A] rounded-sm p-1.5">
-                <label className="sr-only" htmlFor="newsletter">Email address</label>
+                <label className="sr-only" htmlFor="newsletter-email">Email address</label>
                 <input
-                  id="newsletter"
+                  id="newsletter-email"
                   type="email"
                   required
                   value={newsletterEmail}
                   onChange={(e) => {
                     setNewsletterEmail(e.target.value)
                     setNewsletterError('')
+                    if (newsletterPreference === 'no') setNewsletterPreference('')
                   }}
-                  disabled={subscribed || newsletterLoading}
+                  disabled={(subscribed && newsletterPreference !== 'no') || newsletterLoading}
                   placeholder="you@email.com"
                   className="flex-1 bg-transparent px-3 py-2 text-sm outline-none placeholder:text-[#8A7F6E] disabled:opacity-70"
                 />
                 <button
                   type="submit"
-                  disabled={subscribed || newsletterLoading}
+                  disabled={(subscribed && newsletterPreference !== 'no') || newsletterLoading}
                   className="shrink-0 bg-[#E8A93B] text-[#231F1C] text-xs font-medium px-3 py-2 rounded-sm hover:bg-[#d99c2f] transition-colors inline-flex items-center gap-1 disabled:opacity-70 cursor-pointer"
                 >
-                  {subscribed ? 'Subscribed' : newsletterLoading ? 'Sending…' : 'New arrivals'}{' '}
+                  {newsletterPreference === 'yes'
+                    ? 'Updates on'
+                    : subscribed && newsletterPreference === 'pending'
+                      ? 'Subscribed'
+                      : newsletterLoading
+                        ? 'Sending…'
+                        : 'New arrivals'}{' '}
                   <ChevronRight className="w-3.5 h-3.5" />
                 </button>
               </div>
               {newsletterError && (
                 <p className="mt-2 text-xs text-[#E8A93B]">{newsletterError}</p>
               )}
-              {subscribed && (
+              {newsletterPreference === 'pending' && (
                 <p className="mt-2 text-xs text-[#D8CFC0]">
                   Check your inbox — confirm if you want regular product &amp; discount updates.
+                </p>
+              )}
+              {newsletterPreference === 'yes' && (
+                <p className="mt-2 text-xs text-[#D8CFC0]">
+                  You’re set — you’ll get regular emails when sellers add products or discounts.
+                </p>
+              )}
+              {newsletterPreference === 'no' && (
+                <p className="mt-2 text-xs text-[#D8CFC0]">
+                  You opted for no. You won’t get regular updates — subscribe again if you want them.
                 </p>
               )}
             </form>
