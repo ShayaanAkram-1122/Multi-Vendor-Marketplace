@@ -258,6 +258,7 @@ export function ShopActivityProvider({ children }) {
 
   const value = useMemo(
     () => ({
+      ready,
       favorites,
       favoriteCount: favorites.length,
       isFavorite,
@@ -284,6 +285,7 @@ export function ShopActivityProvider({ children }) {
       clearDeliveryLocation,
     }),
     [
+      ready,
       favorites,
       isFavorite,
       toggleFavorite,
