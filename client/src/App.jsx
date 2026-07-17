@@ -12,6 +12,7 @@ import AdminRegister from './pages/AdminRegister'
 import AdminConsole from './pages/AdminConsole'
 import NewsletterConfirmed from './pages/NewsletterConfirmed'
 import CartPage from './pages/CartPage'
+import HelpPage from './pages/HelpPage'
 
 export default function App() {
   return (
@@ -22,6 +23,7 @@ export default function App() {
             <Route path="/" element={<LandingPage />} />
             <Route path="/shop" element={<BuyerLandingPage />} />
             <Route path="/cart" element={<CartPage />} />
+            <Route path="/help" element={<HelpPage />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />

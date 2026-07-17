@@ -27,7 +27,7 @@ function fromAddress() {
   return process.env.SMTP_FROM || process.env.SMTP_USER
 }
 
-async function sendMail({ to, subject, text, html }) {
+async function sendMail({ to, subject, text, html, replyTo }) {
   const mailer = getTransporter()
   if (!mailer) {
     console.warn('[mail] SMTP is not configured — skipping email to', to)
@@ -40,6 +40,7 @@ async function sendMail({ to, subject, text, html }) {
     subject,
     text,
     html,
+    ...(replyTo ? { replyTo } : {}),
   })
 
   return info

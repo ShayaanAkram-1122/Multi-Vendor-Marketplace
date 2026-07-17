@@ -75,9 +75,9 @@ export default function MobileMenu({ open, onClose, activeCategory, onSelectCate
           <Link to="/orders" onClick={onClose} className="flex items-center gap-2 py-1.5">
             <Package size={15} /> Track order
           </Link>
-          <a href="mailto:hello@vendora.app" className="flex items-center gap-2 py-1.5">
+          <Link to="/help" onClick={onClose} className="flex items-center gap-2 py-1.5">
             <HelpCircle size={15} /> Help
-          </a>
+          </Link>
         </div>
       </div>
     </div>

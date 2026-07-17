@@ -19,10 +19,10 @@ export default function UtilityBar({ location = 'Set delivery location' }) {
             <Package size={13} />
             Track Order
           </Link>
-          <a href="mailto:hello@vendora.app" className="flex items-center gap-1.5 hover:text-[#EEE7D8]">
+          <Link to="/help" className="flex items-center gap-1.5 hover:text-[#EEE7D8]">
             <HelpCircle size={13} />
             Help
-          </a>
+          </Link>
         </div>
       </div>
     </div>
