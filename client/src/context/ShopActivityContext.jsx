@@ -51,12 +51,14 @@ export function ShopActivityProvider({ children }) {
   const [favorites, setFavorites] = useState([])
   const [notifications, setNotifications] = useState([])
   const [cart, setCart] = useState([])
+  const [deliveryLocation, setDeliveryLocation] = useState(null)
   const [ready, setReady] = useState(false)
 
   useEffect(() => {
     setFavorites(readJson(storageKey(userKey, 'favorites'), []))
     setNotifications(readJson(storageKey(userKey, 'notifications'), []))
     setCart(readJson(storageKey(userKey, 'cart'), []))
+    setDeliveryLocation(readJson(storageKey(userKey, 'delivery_location'), null))
     setReady(true)
   }, [userKey])
 
@@ -74,6 +76,11 @@ export function ShopActivityProvider({ children }) {
     if (!ready) return
     writeJson(storageKey(userKey, 'cart'), cart)
   }, [cart, userKey, ready])
+
+  useEffect(() => {
+    if (!ready) return
+    writeJson(storageKey(userKey, 'delivery_location'), deliveryLocation)
+  }, [deliveryLocation, userKey, ready])
 
   const isFavorite = useCallback(
     (productId) => favorites.some((f) => String(f.id) === String(productId)),
@@ -195,6 +202,45 @@ export function ShopActivityProvider({ children }) {
     setNotifications([])
   }, [])
 
+  const saveDeliveryLocation = useCallback((location) => {
+    if (!location) {
+      setDeliveryLocation(null)
+      return null
+    }
+    const next = {
+      label: String(location.label || '').trim(),
+      address: String(location.address || '').trim(),
+      city: String(location.city || '').trim(),
+      region: String(location.region || '').trim(),
+      country: String(location.country || '').trim(),
+      postalCode: String(location.postalCode || '').trim(),
+      lat: location.lat == null || location.lat === '' ? null : Number(location.lat),
+      lng: location.lng == null || location.lng === '' ? null : Number(location.lng),
+      source: location.source || 'manual',
+      updatedAt: new Date().toISOString(),
+    }
+    setDeliveryLocation(next)
+    pushNotification({
+      type: 'info',
+      title: 'Delivery location saved',
+      body: next.label || [next.city, next.country].filter(Boolean).join(', ') || 'Your delivery address was updated.',
+    })
+    return next
+  }, [pushNotification])
+
+  const clearDeliveryLocation = useCallback(() => {
+    setDeliveryLocation(null)
+  }, [])
+
+  const deliveryLabel = useMemo(() => {
+    if (!deliveryLocation) return 'Set delivery location'
+    if (deliveryLocation.label) return deliveryLocation.label
+    const parts = [deliveryLocation.city, deliveryLocation.country].filter(Boolean)
+    if (parts.length) return parts.join(', ')
+    if (deliveryLocation.address) return deliveryLocation.address
+    return 'Set delivery location'
+  }, [deliveryLocation])
+
   const unreadCount = useMemo(
     () => notifications.filter((n) => !n.read).length,
     [notifications],
@@ -232,6 +278,10 @@ export function ShopActivityProvider({ children }) {
       removeFromCart,
       clearCart,
       lineTotal,
+      deliveryLocation,
+      deliveryLabel,
+      saveDeliveryLocation,
+      clearDeliveryLocation,
     }),
     [
       favorites,
@@ -252,6 +302,10 @@ export function ShopActivityProvider({ children }) {
       updateCartQuantity,
       removeFromCart,
       clearCart,
+      deliveryLocation,
+      deliveryLabel,
+      saveDeliveryLocation,
+      clearDeliveryLocation,
     ],
   )
 

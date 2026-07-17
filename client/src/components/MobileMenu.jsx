@@ -1,9 +1,12 @@
 import { X, Store, Package, HelpCircle, MapPin } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { useShopActivity } from '../context/ShopActivityContext'
 
 const CATEGORIES = ['Home & Living', 'Jewelry', 'Art & Prints', 'Vintage', 'Wellness', 'Stationery']
 
 export default function MobileMenu({ open, onClose, activeCategory, onSelectCategory, user }) {
+  const { deliveryLabel } = useShopActivity()
+
   if (!open) return null
 
   return (
@@ -66,8 +69,9 @@ export default function MobileMenu({ open, onClose, activeCategory, onSelectCate
         </div>
 
         <div className="flex flex-col gap-1 border-t border-[#D9CFBB] pt-4 text-sm text-[#4A443A]">
-          <Link to="/shop" onClick={onClose} className="flex items-center gap-2 py-1.5">
-            <MapPin size={15} /> Delivery location
+          <Link to="/delivery-location" onClick={onClose} className="flex items-center gap-2 py-1.5">
+            <MapPin size={15} className="shrink-0" />
+            <span className="truncate">{deliveryLabel}</span>
           </Link>
           <Link to="/register" onClick={onClose} className="flex items-center gap-2 py-1.5">
             <Store size={15} /> Sell on Vendora
