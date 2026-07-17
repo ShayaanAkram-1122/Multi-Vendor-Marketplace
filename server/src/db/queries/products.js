@@ -41,7 +41,8 @@ async function listProducts({
       image,
       discount_percent::float AS "discountPercent"
     FROM products
-    WHERE ($1::text IS NULL OR category::text = $1)
+    WHERE is_hidden = FALSE
+      AND ($1::text IS NULL OR category::text = $1)
       AND (
         $2::text IS NULL
         OR name ILIKE '%' || $2 || '%'
@@ -54,7 +55,8 @@ async function listProducts({
   const countSql = `
     SELECT COUNT(*)::int AS total
     FROM products
-    WHERE ($1::text IS NULL OR category::text = $1)
+    WHERE is_hidden = FALSE
+      AND ($1::text IS NULL OR category::text = $1)
       AND (
         $2::text IS NULL
         OR name ILIKE '%' || $2 || '%'
@@ -98,6 +100,7 @@ async function listAiPicks(limit = 8) {
       discount_percent::float AS "discountPercent"
     FROM products
     WHERE ai_pick = TRUE
+      AND is_hidden = FALSE
     ORDER BY rating DESC, id ASC
     LIMIT $1
     `,

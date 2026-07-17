@@ -32,6 +32,7 @@ app.use('/api/auth', authRoutes)
 app.use('/api/products', productRoutes)
 app.use('/api/newsletter', require('./routes/newsletter'))
 app.use('/api/help', require('./routes/help'))
+app.use('/api/admin', require('./routes/admin'))
 
 app.use((err, _req, res, _next) => {
   console.error(err)
