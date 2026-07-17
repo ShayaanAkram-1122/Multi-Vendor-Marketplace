@@ -31,11 +31,21 @@ const EMPTY_FORM = {
 function buildLabel(parts) {
   const { label, address, city, country } = parts
   if (label?.trim()) return label.trim()
+  return placeShortLabel(parts) || address || country || 'Saved location'
+}
+
+/** Always derive a short label from place fields (ignores any previous custom label). */
+function placeShortLabel(parts) {
+  const { city, region, country, address } = parts
   if (city && country) return `${city}, ${country}`
+  if (city && region) return `${city}, ${region}`
   if (city) return city
+  if (region && country) return `${region}, ${country}`
+  if (region) return region
+  if (address && country) return `${address}, ${country}`
   if (address) return address
   if (country) return country
-  return 'Saved location'
+  return 'Pinned location'
 }
 
 async function reverseGeocode(lat, lng) {
@@ -46,10 +56,19 @@ async function reverseGeocode(lat, lng) {
   if (!res.ok) throw new Error('Could not look up that map point')
   const data = await res.json()
   const a = data.address || {}
+  const city =
+    a.city ||
+    a.town ||
+    a.village ||
+    a.municipality ||
+    a.suburb ||
+    a.neighbourhood ||
+    a.hamlet ||
+    a.county ||
+    ''
   return {
-    label: '',
     address: [a.house_number, a.road].filter(Boolean).join(' ') || data.display_name?.split(',')[0] || '',
-    city: a.city || a.town || a.village || a.municipality || a.county || '',
+    city,
     region: a.state || a.region || a.province || '',
     country: a.country || '',
     postalCode: a.postcode || '',
@@ -68,10 +87,19 @@ async function forwardGeocode(query) {
   if (!results?.length) throw new Error('No map match found for that address')
   const hit = results[0]
   const a = hit.address || {}
+  const city =
+    a.city ||
+    a.town ||
+    a.village ||
+    a.municipality ||
+    a.suburb ||
+    a.neighbourhood ||
+    a.hamlet ||
+    a.county ||
+    ''
   return {
-    label: '',
     address: [a.house_number, a.road].filter(Boolean).join(' ') || hit.display_name?.split(',')[0] || query,
-    city: a.city || a.town || a.village || a.municipality || a.county || '',
+    city,
     region: a.state || a.region || a.province || '',
     country: a.country || '',
     postalCode: a.postcode || '',
@@ -115,13 +143,13 @@ export default function DeliveryLocationPage() {
     setSaved(false)
     try {
       const found = await reverseGeocode(lat, lng)
-      setForm((prev) => ({
-        ...prev,
+      setForm({
+        ...EMPTY_FORM,
         ...found,
-        label: prev.label || buildLabel(found),
+        label: placeShortLabel(found),
         lat,
         lng,
-      }))
+      })
     } catch (err) {
       setForm((prev) => ({ ...prev, lat, lng }))
       setError(err.message || 'Picked coordinates, but address lookup failed')
@@ -167,7 +195,7 @@ export default function DeliveryLocationPage() {
       setForm((prev) => ({
         ...prev,
         ...found,
-        label: prev.label || buildLabel(found),
+        label: placeShortLabel(found),
       }))
       setTab('map')
     } catch (err) {
