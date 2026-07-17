@@ -65,3 +65,10 @@ export function restoreModerationProduct(productId) {
 export function deleteModerationProduct(productId) {
   return adminRequest(`/admin/moderation/products/${productId}`, { method: 'DELETE' })
 }
+
+export function applyProductSale(productId, discountPercent) {
+  return adminRequest(`/admin/moderation/products/${productId}/sale`, {
+    method: 'PATCH',
+    body: JSON.stringify({ discountPercent }),
+  })
+}

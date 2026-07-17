@@ -19,6 +19,7 @@ router.post('/role-requests/:id/reject', roleRequestController.rejectRoleRequest
 router.get('/moderation/products', adminController.listModerationProducts)
 router.post('/moderation/products/:id/hide', adminController.hideProduct)
 router.post('/moderation/products/:id/restore', adminController.restoreProduct)
+router.patch('/moderation/products/:id/sale', adminController.applySale)
 router.delete('/moderation/products/:id', adminController.deleteProduct)
 
 module.exports = router

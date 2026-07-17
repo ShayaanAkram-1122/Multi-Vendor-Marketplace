@@ -185,11 +185,41 @@ async function updateProductDiscount(productId, discountPercent) {
       description,
       stock,
       image,
-      discount_percent::float AS "discountPercent"
+      discount_percent::float AS "discountPercent",
+      is_hidden AS "isHidden"
     `,
     [productId, discountPercent],
   )
   return rows[0] || null
+}
+
+async function listOnSaleProducts(limit = 12) {
+  const safeLimit = Math.min(Math.max(Number(limit) || 12, 1), 50)
+  const { rows } = await query(
+    `
+    SELECT
+      id,
+      name,
+      seller_name AS seller,
+      price::float AS price,
+      rating::float AS rating,
+      category::text AS category,
+      ai_pick AS "aiPick",
+      tilt,
+      description,
+      stock,
+      image,
+      discount_percent::float AS "discountPercent"
+    FROM products
+    WHERE is_hidden = FALSE
+      AND discount_percent > 0
+      AND stock > 0
+    ORDER BY discount_percent DESC, updated_at DESC, id DESC
+    LIMIT $1
+    `,
+    [safeLimit],
+  )
+  return rows
 }
 
 module.exports = {
@@ -198,4 +228,5 @@ module.exports = {
   listByCategory,
   createProduct,
   updateProductDiscount,
+  listOnSaleProducts,
 }

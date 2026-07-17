@@ -2,10 +2,13 @@ import { Sparkles, Star, ShoppingBag, Heart } from 'lucide-react'
 import { useShopActivity } from '../context/ShopActivityContext'
 
 export default function ProductCard({ product, size = 'default' }) {
-  const { name, seller, price, rating, image, aiPick, tilt } = product
+  const { name, seller, price, rating, image, aiPick, tilt, discountPercent } = product
   const width = size === 'compact' ? 'w-56' : 'w-full'
   const { isFavorite, toggleFavorite, addToCart } = useShopActivity()
   const favorited = isFavorite(product.id)
+  const discount = Number(discountPercent) || 0
+  const salePrice =
+    discount > 0 ? Math.round(Number(price) * (1 - discount / 100) * 100) / 100 : Number(price)
 
   const handleFavorite = (e) => {
     e.preventDefault()
@@ -26,12 +29,21 @@ export default function ProductCard({ product, size = 'default' }) {
         aria-hidden="true"
       >
         <svg width="72" height="40" viewBox="0 0 72 40" className="drop-shadow-sm">
-          <path d="M4 20 L18 4 H68 V36 H18 Z" fill="#D6A24A" stroke="#5C3A4B" strokeWidth="1" />
+          <path
+            d="M4 20 L18 4 H68 V36 H18 Z"
+            fill={discount > 0 ? '#5C3A4B' : '#D6A24A'}
+            stroke="#5C3A4B"
+            strokeWidth="1"
+          />
           <circle cx="12" cy="20" r="3.5" fill="#EEE7D8" stroke="#5C3A4B" strokeWidth="1" />
           <line x1="0" y1="14" x2="10" y2="17" stroke="#2B2620" strokeWidth="1" strokeDasharray="2 2" />
         </svg>
-        <span className="absolute inset-0 flex items-center justify-end pr-2 pt-1 font-mono text-[13px] font-semibold text-[#2B2620]">
-          ${price}
+        <span
+          className={`absolute inset-0 flex items-center justify-end pr-2 pt-1 font-mono text-[13px] font-semibold ${
+            discount > 0 ? 'text-[#EEE7D8]' : 'text-[#2B2620]'
+          }`}
+        >
+          ${salePrice.toFixed(discount > 0 && salePrice % 1 !== 0 ? 2 : 0)}
         </span>
       </div>
 
@@ -42,6 +54,15 @@ export default function ProductCard({ product, size = 'default' }) {
           <div className="absolute left-2 top-2 z-10 flex items-center gap-1 rounded-full bg-[#5C3A4B] px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-[#EEE7D8]">
             <Sparkles size={11} />
             AI Pick
+          </div>
+        )}
+        {discount > 0 && (
+          <div
+            className={`absolute z-10 rounded-full bg-[#D6A24A] px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-[#2B2620] ${
+              aiPick ? 'left-2 top-9' : 'left-2 top-2'
+            }`}
+          >
+            {discount}% off
           </div>
         )}
 
@@ -63,6 +84,9 @@ export default function ProductCard({ product, size = 'default' }) {
         <div className="space-y-1 p-3">
           <p className="font-mono text-[10px] uppercase tracking-wider text-[#6E7856]">{seller}</p>
           <h3 className="font-['Fraunces'] text-[15px] leading-snug text-[#2B2620] line-clamp-2">{name}</h3>
+          {discount > 0 && (
+            <p className="font-mono text-[11px] text-[#9A9284] line-through">${Number(price).toFixed(2)}</p>
+          )}
           <div className="flex items-center justify-between pt-1">
             <span className="flex items-center gap-1 text-xs text-[#6E7856]">
               <Star size={12} fill="#D6A24A" stroke="#D6A24A" />

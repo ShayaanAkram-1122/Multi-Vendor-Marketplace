@@ -283,6 +283,7 @@ async function listModerationProducts({
   if (filter === 'hidden') filterSql = 'AND is_hidden = TRUE'
   else if (filter === 'visible') filterSql = 'AND is_hidden = FALSE'
   else if (filter === 'low_stock') filterSql = 'AND is_hidden = FALSE AND stock <= 5'
+  else if (filter === 'on_sale') filterSql = 'AND is_hidden = FALSE AND discount_percent > 0'
 
   const listSql = `
     SELECT
@@ -295,6 +296,7 @@ async function listModerationProducts({
       stock,
       image,
       is_hidden AS "isHidden",
+      discount_percent::float AS "discountPercent",
       moderated_at AS "moderatedAt",
       created_at AS "createdAt"
     FROM products

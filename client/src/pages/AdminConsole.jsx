@@ -36,6 +36,7 @@ import {
   hideModerationProduct,
   restoreModerationProduct,
   updateAdminUserRole,
+  applyProductSale,
 } from '../services/adminApi'
 import {
   approveRoleRequest,
@@ -192,6 +193,7 @@ export default function AdminConsole() {
   const [modLoading, setModLoading] = useState(false)
   const [modError, setModError] = useState('')
   const [modActionId, setModActionId] = useState(null)
+  const [saleDrafts, setSaleDrafts] = useState({})
 
   const [roleRequests, setRoleRequests] = useState([])
   const [roleRequestsLoading, setRoleRequestsLoading] = useState(false)
@@ -384,6 +386,35 @@ export default function AdminConsole() {
       await loadModeration()
     } catch (err) {
       setModError(err.message || 'Could not delete product')
+    } finally {
+      setModActionId(null)
+    }
+  }
+
+  const handleApplySale = async (product) => {
+    const raw = saleDrafts[product.id]
+    const discountPercent =
+      raw === undefined || raw === ''
+        ? Number(product.discountPercent) || 0
+        : Number(raw)
+
+    if (!Number.isFinite(discountPercent) || discountPercent < 0 || discountPercent > 100) {
+      setModError('Sale percent must be between 0 and 100')
+      return
+    }
+
+    setModActionId(product.id)
+    setModError('')
+    try {
+      await applyProductSale(product.id, discountPercent)
+      setSaleDrafts((prev) => {
+        const next = { ...prev }
+        delete next[product.id]
+        return next
+      })
+      await loadModeration()
+    } catch (err) {
+      setModError(err.message || 'Could not apply sale')
     } finally {
       setModActionId(null)
     }
@@ -935,7 +966,7 @@ export default function AdminConsole() {
               <div>
                 <h2 className="font-['Fraunces'] text-2xl text-[#2B2620]">Moderation</h2>
                 <p className="mt-1 text-sm text-[#6E6455]">
-                  Hide listings from the shop, restore them, or delete products permanently.
+                  Hide or delete listings, and apply sales. Opted-in newsletter subscribers get an email for every sale.
                 </p>
               </div>
               <p className="font-mono text-[11px] uppercase tracking-wide text-[#9A9284]">
@@ -968,6 +999,7 @@ export default function AdminConsole() {
                 <option value="all">All products</option>
                 <option value="visible">Visible</option>
                 <option value="hidden">Hidden</option>
+                <option value="on_sale">On sale</option>
                 <option value="low_stock">Low stock</option>
               </select>
             </div>
@@ -1001,6 +1033,11 @@ export default function AdminConsole() {
                                 Hidden
                               </span>
                             )}
+                            {Number(product.discountPercent) > 0 && (
+                              <span className="rounded-full bg-[#D6A24A]/25 px-2 py-0.5 font-mono text-[10px] uppercase text-[#7A5A1A]">
+                                {product.discountPercent}% off
+                              </span>
+                            )}
                             {product.stock <= 5 && !product.isHidden && (
                               <span className="rounded-full bg-[#D6A24A]/20 px-2 py-0.5 font-mono text-[10px] uppercase text-[#7A5A1A]">
                                 Low stock
@@ -1010,6 +1047,48 @@ export default function AdminConsole() {
                           <p className="mt-0.5 text-xs text-[#9A9284]">
                             {product.seller} · {product.category} · ${Number(product.price).toFixed(2)} · {product.stock} in stock
                           </p>
+                          <div className="mt-2 flex flex-wrap items-center gap-2">
+                            <label className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wide text-[#9A9284]">
+                              Sale %
+                              <input
+                                type="number"
+                                min="0"
+                                max="100"
+                                step="1"
+                                value={
+                                  saleDrafts[product.id] ??
+                                  (product.discountPercent != null ? String(product.discountPercent) : '0')
+                                }
+                                onChange={(e) =>
+                                  setSaleDrafts((prev) => ({ ...prev, [product.id]: e.target.value }))
+                                }
+                                className="w-16 rounded-sm border border-[#D9CFBB] bg-white px-2 py-1 text-sm text-[#2B2620] outline-none focus:border-[#5C3A4B]"
+                              />
+                            </label>
+                            <button
+                              type="button"
+                              disabled={busy}
+                              onClick={() => handleApplySale(product)}
+                              className="inline-flex items-center gap-1.5 rounded-sm bg-[#2B2620] px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-wide text-[#EEE7D8] hover:bg-[#5C3A4B] disabled:opacity-50 cursor-pointer"
+                            >
+                              <Percent size={12} /> Apply sale
+                            </button>
+                            {Number(product.discountPercent) > 0 && (
+                              <button
+                                type="button"
+                                disabled={busy}
+                                onClick={() => {
+                                  setSaleDrafts((prev) => ({ ...prev, [product.id]: '0' }))
+                                  applyProductSale(product.id, 0)
+                                    .then(() => loadModeration())
+                                    .catch((err) => setModError(err.message || 'Could not clear sale'))
+                                }}
+                                className="font-mono text-[10px] uppercase tracking-wide text-[#5C3A4B] hover:underline disabled:opacity-50 cursor-pointer"
+                              >
+                                Clear sale
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
                       <div className="flex flex-wrap gap-2 sm:justify-end">

@@ -64,10 +64,26 @@ async function listMarketingOptedIn() {
   return rows
 }
 
+async function findByEmail(email) {
+  const normalized = String(email || '').trim().toLowerCase()
+  if (!normalized) return null
+  const { rows } = await query(
+    `
+    SELECT id, email, marketing_opt_in, preference_token, subscribed_at, updated_at
+    FROM newsletter_subscribers
+    WHERE email = $1
+    LIMIT 1
+    `,
+    [normalized],
+  )
+  return rows[0] || null
+}
+
 module.exports = {
   upsertSubscriber,
   findByToken,
   setMarketingOptIn,
   listMarketingOptedIn,
+  findByEmail,
   newPreferenceToken,
 }

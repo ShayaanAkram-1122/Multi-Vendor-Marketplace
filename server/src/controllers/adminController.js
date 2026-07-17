@@ -1,4 +1,6 @@
 const adminQueries = require('../db/queries/admin')
+const productQueries = require('../db/queries/products')
+const { notifyMarketingSubscribers } = require('../services/newsletterNotify')
 
 async function getAnalytics(req, res, next) {
   try {
@@ -128,6 +130,45 @@ async function deleteProduct(req, res, next) {
   }
 }
 
+async function applySale(req, res, next) {
+  try {
+    const productId = Number(req.params.id)
+    const discountPercent = Number(req.body.discountPercent)
+
+    if (!Number.isFinite(productId)) {
+      return res.status(400).json({ message: 'Valid product id is required' })
+    }
+    if (!Number.isFinite(discountPercent) || discountPercent < 0 || discountPercent > 100) {
+      return res.status(400).json({ message: 'Sale percent must be between 0 and 100' })
+    }
+
+    const product = await productQueries.updateProductDiscount(productId, discountPercent)
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' })
+    }
+
+    let notify = { sent: 0, skipped: 0 }
+    if (discountPercent > 0) {
+      try {
+        notify = await notifyMarketingSubscribers({ type: 'discount', product })
+      } catch (err) {
+        console.error('[mail] admin sale notify failed:', err.message)
+      }
+    }
+
+    return res.json({
+      message:
+        discountPercent > 0
+          ? `Sale applied (−${discountPercent}%). ${notify.sent} subscriber email(s) sent.`
+          : 'Sale removed from product.',
+      product,
+      notify,
+    })
+  } catch (err) {
+    return next(err)
+  }
+}
+
 module.exports = {
   getAnalytics,
   listUsers,
@@ -137,4 +178,5 @@ module.exports = {
   hideProduct,
   restoreProduct,
   deleteProduct,
+  applySale,
 }

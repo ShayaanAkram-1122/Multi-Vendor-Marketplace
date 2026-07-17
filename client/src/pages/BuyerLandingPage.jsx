@@ -3,6 +3,7 @@ import Header from '../components/Header'
 import HeroFlatlay from '../components/HeroFlatlay'
 import CategoryShelf from '../components/CategoryShelf'
 import ProductCard from '../components/ProductCard'
+import SalePopup from '../components/SalePopup'
 import { fetchProducts, getAiPicks, getByCategory } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
 
@@ -48,6 +49,7 @@ export default function BuyerLandingPage() {
         onSearch={setSearch}
         user={user}
       />
+      <SalePopup user={user} />
 
       <HeroFlatlay featured={aiPicks} onSearch={setSearch} />
 
