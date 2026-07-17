@@ -19,6 +19,11 @@ import {
   ArrowRightLeft,
   Check,
   X as XIcon,
+  DollarSign,
+  TrendingUp,
+  Star,
+  Percent,
+  Boxes,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { logoutUser } from '../services/authApi'
@@ -61,21 +66,79 @@ function roleBadgeClass(role) {
   return 'bg-[#D6A24A]/20 text-[#7A5A1A]'
 }
 
-function StatCard({ label, value, hint, icon: Icon }) {
+function formatMoney(value) {
+  const n = Number(value || 0)
+  if (n >= 1000000) return `$${(n / 1000000).toFixed(2)}M`
+  if (n >= 1000) return `$${(n / 1000).toFixed(1)}k`
+  return `$${n.toFixed(2)}`
+}
+
+function formatMoneyFull(value) {
+  return `$${Number(value || 0).toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`
+}
+
+function StatCard({ label, value, hint, icon: Icon, accent = 'dark' }) {
+  const iconBg =
+    accent === 'gold'
+      ? 'bg-[#D6A24A] text-[#2B2620]'
+      : accent === 'green'
+        ? 'bg-[#6E7856] text-[#EEE7D8]'
+        : accent === 'wine'
+          ? 'bg-[#5C3A4B] text-[#EEE7D8]'
+          : 'bg-[#2B2620] text-[#EEE7D8]'
+
   return (
-    <div className="rounded-sm border border-[#D9CFBB] bg-[#FBF8F2] px-4 py-4">
+    <div className="rounded-sm border border-[#D9CFBB] bg-[#FBF8F2] px-4 py-4 shadow-[0_1px_0_rgba(43,38,32,0.04)]">
       <div className="flex items-start justify-between gap-3">
-        <div>
+        <div className="min-w-0">
           <p className="font-mono text-[10px] uppercase tracking-widest text-[#9A9284]">{label}</p>
-          <p className="mt-2 font-['Fraunces'] text-3xl text-[#2B2620]">{value}</p>
-          {hint && <p className="mt-1 text-xs text-[#6E6455]">{hint}</p>}
+          <p className="mt-2 truncate font-['Fraunces'] text-3xl text-[#2B2620]">{value}</p>
+          {hint && <p className="mt-1 text-xs leading-relaxed text-[#6E6455]">{hint}</p>}
         </div>
         {Icon && (
-          <span className="flex h-9 w-9 items-center justify-center rounded-sm bg-[#2B2620] text-[#EEE7D8]">
+          <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-sm ${iconBg}`}>
             <Icon size={16} />
           </span>
         )}
       </div>
+    </div>
+  )
+}
+
+function ValueBars({ items, valueKey = 'revenue', labelKey = 'category', metaKey = 'products' }) {
+  const max = Math.max(...items.map((item) => Number(item[valueKey] || 0)), 1)
+  return (
+    <div className="space-y-3.5">
+      {items.map((item) => {
+        const value = Number(item[valueKey] || 0)
+        const pct = Math.round((value / max) * 100)
+        return (
+          <div key={item[labelKey]}>
+            <div className="mb-1.5 flex items-end justify-between gap-3 text-xs">
+              <div className="min-w-0">
+                <p className="truncate font-medium text-[#2B2620]">{item[labelKey]}</p>
+                {item[metaKey] != null && (
+                  <p className="text-[11px] text-[#9A9284]">
+                    {item[metaKey]} {metaKey === 'products' ? 'products' : metaKey}
+                    {item.units != null ? ` · ${item.units} units` : ''}
+                  </p>
+                )}
+              </div>
+              <span className="shrink-0 font-mono text-[11px] text-[#4A443A]">{formatMoneyFull(value)}</span>
+            </div>
+            <div className="h-2.5 overflow-hidden rounded-full bg-[#EEE7D8]">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-[#6E7856] to-[#D6A24A] transition-all"
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+          </div>
+        )
+      })}
+      {!items.length && <p className="text-sm text-[#9A9284]">No data yet.</p>}
     </div>
   )
 }
@@ -416,24 +479,94 @@ export default function AdminConsole() {
               <p className="text-sm text-[#9A9284]">Loading analytics…</p>
             ) : analytics ? (
               <>
+                {/* Revenue hero */}
+                <div className="overflow-hidden rounded-sm border border-[#D9CFBB] bg-[#2B2620] text-[#EEE7D8]">
+                  <div className="grid gap-0 lg:grid-cols-[1.4fr_1fr]">
+                    <div className="border-b border-[#3A342B] p-6 lg:border-b-0 lg:border-r">
+                      <div className="flex items-center gap-2">
+                        <DollarSign size={16} className="text-[#D6A24A]" />
+                        <p className="font-mono text-[10px] uppercase tracking-widest text-[#D6A24A]">
+                          Marketplace inventory value
+                        </p>
+                      </div>
+                      <p className="mt-3 font-['Fraunces'] text-4xl italic tracking-tight sm:text-5xl">
+                        {formatMoneyFull(analytics.revenue?.inventoryValue)}
+                      </p>
+                      <p className="mt-2 max-w-md text-sm text-[#D9CFBB]">
+                        Live catalog value after discounts (price × stock). List value before discounts:{' '}
+                        <span className="text-[#EEE7D8]">
+                          {formatMoneyFull(analytics.revenue?.listInventoryValue)}
+                        </span>
+                      </p>
+                      <div className="mt-5 flex flex-wrap gap-2">
+                        <span className="rounded-full bg-[#3A342B] px-3 py-1 font-mono text-[10px] uppercase tracking-wide text-[#D6A24A]">
+                          {analytics.revenue?.discountRate || 0}% avg discount drag
+                        </span>
+                        <span className="rounded-full bg-[#3A342B] px-3 py-1 font-mono text-[10px] uppercase tracking-wide text-[#D9CFBB]">
+                          {analytics.products.total_units || 0} units in stock
+                        </span>
+                        <span className="rounded-full bg-[#3A342B] px-3 py-1 font-mono text-[10px] uppercase tracking-wide text-[#D9CFBB]">
+                          {analytics.products.on_sale || 0} on sale
+                        </span>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-px bg-[#3A342B]">
+                      {[
+                        {
+                          label: 'Avg sale price',
+                          value: formatMoney(analytics.revenue?.avgSalePrice),
+                          hint: `Range ${formatMoney(analytics.revenue?.minPrice)}–${formatMoney(analytics.revenue?.maxPrice)}`,
+                        },
+                        {
+                          label: 'Discount savings',
+                          value: formatMoney(analytics.revenue?.discountSavings),
+                          hint: 'Passed to buyers via % off',
+                        },
+                        {
+                          label: 'Visible listings',
+                          value: analytics.products.visible ?? analytics.products.total,
+                          hint: `${analytics.products.hidden || 0} hidden from shop`,
+                        },
+                        {
+                          label: 'Avg rating',
+                          value: Number(analytics.products.avg_rating || 0).toFixed(1),
+                          hint: `${analytics.products.ai_picks || 0} AI picks live`,
+                        },
+                      ].map((cell) => (
+                        <div key={cell.label} className="bg-[#2B2620] p-4 sm:p-5">
+                          <p className="font-mono text-[10px] uppercase tracking-widest text-[#9A9284]">
+                            {cell.label}
+                          </p>
+                          <p className="mt-2 font-['Fraunces'] text-2xl text-[#EEE7D8]">{cell.value}</p>
+                          <p className="mt-1 text-[11px] text-[#9A9284]">{cell.hint}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* KPI strip */}
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                   <StatCard
                     label="Total users"
                     value={analytics.users.total}
                     hint={`+${analytics.users.last_7_days} this week · +${analytics.users.last_30_days} this month`}
                     icon={Users}
+                    accent="wine"
                   />
                   <StatCard
-                    label="Products"
+                    label="Catalog SKUs"
                     value={analytics.products.total}
-                    hint={`${analytics.products.ai_picks} AI picks · ${analytics.products.hidden} hidden`}
+                    hint={`${analytics.products.low_stock || 0} low stock · ${analytics.products.out_of_stock || 0} out`}
                     icon={Package}
+                    accent="green"
                   />
                   <StatCard
-                    label="Sellers"
+                    label="Active sellers"
                     value={analytics.sellers}
-                    hint={`Avg price $${Number(analytics.products.avg_price || 0).toFixed(2)}`}
+                    hint={`Avg list price $${Number(analytics.products.avg_price || 0).toFixed(2)}`}
                     icon={Store}
+                    accent="gold"
                   />
                   <StatCard
                     label="Newsletter"
@@ -444,6 +577,74 @@ export default function AdminConsole() {
                 </div>
 
                 <div className="grid gap-4 lg:grid-cols-2">
+                  <div className="rounded-sm border border-[#D9CFBB] bg-[#FBF8F2] p-5">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="font-mono text-[10px] uppercase tracking-widest text-[#9A9284]">Revenue mix</p>
+                        <h2 className="mt-1 font-['Fraunces'] text-xl text-[#2B2620]">Value by category</h2>
+                      </div>
+                      <TrendingUp size={18} className="text-[#6E7856]" />
+                    </div>
+                    <p className="mt-1 text-xs text-[#6E6455]">
+                      Inventory value after discounts, ranked by category contribution.
+                    </p>
+                    <div className="mt-5">
+                      <ValueBars items={analytics.categoryRevenue || []} />
+                    </div>
+                  </div>
+
+                  <div className="rounded-sm border border-[#D9CFBB] bg-[#FBF8F2] p-5">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="font-mono text-[10px] uppercase tracking-widest text-[#9A9284]">Top stalls</p>
+                        <h2 className="mt-1 font-['Fraunces'] text-xl text-[#2B2620]">Sellers by catalog value</h2>
+                      </div>
+                      <Store size={18} className="text-[#5C3A4B]" />
+                    </div>
+                    <p className="mt-1 text-xs text-[#6E6455]">
+                      Highest inventory value among visible listings.
+                    </p>
+                    <div className="mt-5">
+                      <ValueBars
+                        items={analytics.topSellers || []}
+                        labelKey="seller"
+                        metaKey="products"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid gap-4 lg:grid-cols-3">
+                  <div className="rounded-sm border border-[#D9CFBB] bg-[#FBF8F2] p-5 lg:col-span-1">
+                    <div className="flex items-center gap-2">
+                      <Boxes size={16} className="text-[#D6A24A]" />
+                      <h2 className="font-['Fraunces'] text-xl text-[#2B2620]">Price bands</h2>
+                    </div>
+                    <p className="mt-1 text-xs text-[#6E6455]">How listings cluster by price.</p>
+                    <ul className="mt-4 space-y-2.5">
+                      {(analytics.priceBands || []).map((band) => {
+                        const totalVisible = analytics.products.visible || analytics.products.total || 1
+                        const pct = Math.round((band.count / totalVisible) * 100)
+                        return (
+                          <li key={band.band}>
+                            <div className="mb-1 flex justify-between text-xs">
+                              <span className="text-[#4A443A]">{band.band}</span>
+                              <span className="font-mono text-[#9A9284]">
+                                {band.count} · {pct}%
+                              </span>
+                            </div>
+                            <div className="h-1.5 overflow-hidden rounded-full bg-[#EEE7D8]">
+                              <div
+                                className="h-full rounded-full bg-[#5C3A4B]"
+                                style={{ width: `${pct}%` }}
+                              />
+                            </div>
+                          </li>
+                        )
+                      })}
+                    </ul>
+                  </div>
+
                   <div className="rounded-sm border border-[#D9CFBB] bg-[#FBF8F2] p-5">
                     <p className="font-mono text-[10px] uppercase tracking-widest text-[#9A9284]">Users by role</p>
                     <h2 className="mt-1 font-['Fraunces'] text-xl text-[#2B2620]">Role mix</h2>
@@ -456,6 +657,21 @@ export default function AdminConsole() {
                           <p className="mt-2 font-['Fraunces'] text-2xl text-[#2B2620]">{count}</p>
                         </div>
                       ))}
+                    </div>
+                    <div className="mt-4 rounded-sm border border-[#E7DFD0] bg-white px-3 py-3">
+                      <div className="flex items-center gap-2 text-xs text-[#6E6455]">
+                        <Percent size={14} className="text-[#6E7856]" />
+                        <span>
+                          Buyers make up{' '}
+                          <strong className="text-[#2B2620]">
+                            {analytics.users.total
+                              ? Math.round(((analytics.users.byRole?.buyer || 0) / analytics.users.total) * 100)
+                              : 0}
+                            %
+                          </strong>{' '}
+                          of accounts
+                        </span>
+                      </div>
                     </div>
                   </div>
 
@@ -472,7 +688,7 @@ export default function AdminConsole() {
                   <div className="rounded-sm border border-[#D9CFBB] bg-[#FBF8F2] p-5">
                     <div className="flex items-center gap-2">
                       <AlertTriangle size={16} className="text-[#D6A24A]" />
-                      <h2 className="font-['Fraunces'] text-xl text-[#2B2620]">Low stock</h2>
+                      <h2 className="font-['Fraunces'] text-xl text-[#2B2620]">Low stock watchlist</h2>
                     </div>
                     <p className="mt-1 text-xs text-[#6E6455]">
                       {analytics.products.low_stock} products at or below 5 units
@@ -482,9 +698,17 @@ export default function AdminConsole() {
                         <li key={item.id} className="flex items-center justify-between gap-3 py-2.5 text-sm">
                           <div className="min-w-0">
                             <p className="truncate font-medium text-[#2B2620]">{item.name}</p>
-                            <p className="text-xs text-[#9A9284]">{item.seller}</p>
+                            <p className="text-xs text-[#9A9284]">
+                              {item.seller} · {formatMoneyFull(item.price)}
+                            </p>
                           </div>
-                          <span className="shrink-0 font-mono text-xs text-[#5C3A4B]">{item.stock} left</span>
+                          <span className={`shrink-0 rounded-full px-2 py-0.5 font-mono text-[10px] uppercase ${
+                            item.stock === 0
+                              ? 'bg-[#5C3A4B]/15 text-[#5C3A4B]'
+                              : 'bg-[#D6A24A]/20 text-[#7A5A1A]'
+                          }`}>
+                            {item.stock === 0 ? 'Out' : `${item.stock} left`}
+                          </span>
                         </li>
                       ))}
                       {!analytics.lowStock?.length && (
@@ -494,7 +718,10 @@ export default function AdminConsole() {
                   </div>
 
                   <div className="rounded-sm border border-[#D9CFBB] bg-[#FBF8F2] p-5">
-                    <h2 className="font-['Fraunces'] text-xl text-[#2B2620]">Recent signups</h2>
+                    <div className="flex items-center gap-2">
+                      <Star size={16} className="text-[#D6A24A]" />
+                      <h2 className="font-['Fraunces'] text-xl text-[#2B2620]">Recent signups</h2>
+                    </div>
                     <ul className="mt-4 divide-y divide-[#E7DFD0]">
                       {(analytics.recentUsers || []).map((u) => (
                         <li key={u.id} className="flex items-center justify-between gap-3 py-2.5 text-sm">

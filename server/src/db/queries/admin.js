@@ -1,8 +1,20 @@
 const { query } = require('../../config/db')
 
 async function getAnalytics() {
-  const [users, roles, products, categories, sellers, newsletter, recentUsers, lowStock] =
-    await Promise.all([
+  const [
+    users,
+    roles,
+    products,
+    categories,
+    sellers,
+    newsletter,
+    recentUsers,
+    lowStock,
+    revenue,
+    categoryRevenue,
+    topSellers,
+    priceBands,
+  ] = await Promise.all([
       query(`
         SELECT
           COUNT(*)::int AS total,
@@ -21,9 +33,13 @@ async function getAnalytics() {
           COUNT(*)::int AS total,
           COUNT(*) FILTER (WHERE ai_pick = TRUE)::int AS ai_picks,
           COUNT(*) FILTER (WHERE is_hidden = TRUE)::int AS hidden,
-          COUNT(*) FILTER (WHERE stock <= 5)::int AS low_stock,
-          COALESCE(ROUND(AVG(price)::numeric, 2), 0)::float AS avg_price,
-          COALESCE(ROUND(AVG(rating)::numeric, 2), 0)::float AS avg_rating
+          COUNT(*) FILTER (WHERE is_hidden = FALSE)::int AS visible,
+          COUNT(*) FILTER (WHERE stock <= 5 AND is_hidden = FALSE)::int AS low_stock,
+          COUNT(*) FILTER (WHERE stock = 0 AND is_hidden = FALSE)::int AS out_of_stock,
+          COUNT(*) FILTER (WHERE discount_percent > 0 AND is_hidden = FALSE)::int AS on_sale,
+          COALESCE(ROUND(AVG(price) FILTER (WHERE is_hidden = FALSE)::numeric, 2), 0)::float AS avg_price,
+          COALESCE(ROUND(AVG(rating) FILTER (WHERE is_hidden = FALSE)::numeric, 2), 0)::float AS avg_rating,
+          COALESCE(SUM(stock) FILTER (WHERE is_hidden = FALSE), 0)::int AS total_units
         FROM products
       `),
       query(`
@@ -61,12 +77,86 @@ async function getAnalytics() {
         ORDER BY stock ASC, id ASC
         LIMIT 10
       `),
+      query(`
+        SELECT
+          COALESCE(ROUND(SUM(
+            price * (1 - COALESCE(discount_percent, 0) / 100.0) * stock
+          ) FILTER (WHERE is_hidden = FALSE)::numeric, 2), 0)::float AS inventory_value,
+          COALESCE(ROUND(SUM(
+            price * stock
+          ) FILTER (WHERE is_hidden = FALSE)::numeric, 2), 0)::float AS list_inventory_value,
+          COALESCE(ROUND(SUM(
+            price * (COALESCE(discount_percent, 0) / 100.0) * stock
+          ) FILTER (WHERE is_hidden = FALSE AND discount_percent > 0)::numeric, 2), 0)::float AS discount_savings,
+          COALESCE(ROUND(AVG(
+            price * (1 - COALESCE(discount_percent, 0) / 100.0)
+          ) FILTER (WHERE is_hidden = FALSE)::numeric, 2), 0)::float AS avg_sale_price,
+          COALESCE(ROUND(MAX(price) FILTER (WHERE is_hidden = FALSE)::numeric, 2), 0)::float AS max_price,
+          COALESCE(ROUND(MIN(price) FILTER (WHERE is_hidden = FALSE)::numeric, 2), 0)::float AS min_price
+        FROM products
+      `),
+      query(`
+        SELECT
+          category::text AS category,
+          COUNT(*)::int AS products,
+          COALESCE(SUM(stock), 0)::int AS units,
+          COALESCE(ROUND(SUM(
+            price * (1 - COALESCE(discount_percent, 0) / 100.0) * stock
+          )::numeric, 2), 0)::float AS revenue
+        FROM products
+        WHERE is_hidden = FALSE
+        GROUP BY category
+        ORDER BY revenue DESC
+      `),
+      query(`
+        SELECT
+          seller_name AS seller,
+          COUNT(*)::int AS products,
+          COALESCE(SUM(stock), 0)::int AS units,
+          COALESCE(ROUND(SUM(
+            price * (1 - COALESCE(discount_percent, 0) / 100.0) * stock
+          )::numeric, 2), 0)::float AS revenue,
+          COALESCE(ROUND(AVG(rating)::numeric, 2), 0)::float AS rating
+        FROM products
+        WHERE is_hidden = FALSE
+        GROUP BY seller_name
+        ORDER BY revenue DESC
+        LIMIT 6
+      `),
+      query(`
+        SELECT band, COUNT(*)::int AS count
+        FROM (
+          SELECT
+            CASE
+              WHEN price < 25 THEN 'Under $25'
+              WHEN price < 50 THEN '$25–$50'
+              WHEN price < 100 THEN '$50–$100'
+              WHEN price < 200 THEN '$100–$200'
+              ELSE '$200+'
+            END AS band,
+            CASE
+              WHEN price < 25 THEN 1
+              WHEN price < 50 THEN 2
+              WHEN price < 100 THEN 3
+              WHEN price < 200 THEN 4
+              ELSE 5
+            END AS sort_key
+          FROM products
+          WHERE is_hidden = FALSE
+        ) bands
+        GROUP BY band, sort_key
+        ORDER BY sort_key
+      `),
     ])
 
   const roleMap = { admin: 0, seller: 0, buyer: 0 }
   for (const row of roles.rows) {
     roleMap[row.role] = row.count
   }
+
+  const rev = revenue.rows[0] || {}
+  const listValue = Number(rev.list_inventory_value || 0)
+  const inventoryValue = Number(rev.inventory_value || 0)
 
   return {
     users: {
@@ -79,6 +169,20 @@ async function getAnalytics() {
     newsletter: newsletter.rows[0],
     recentUsers: recentUsers.rows,
     lowStock: lowStock.rows,
+    revenue: {
+      inventoryValue,
+      listInventoryValue: listValue,
+      discountSavings: Number(rev.discount_savings || 0),
+      avgSalePrice: Number(rev.avg_sale_price || 0),
+      maxPrice: Number(rev.max_price || 0),
+      minPrice: Number(rev.min_price || 0),
+      discountRate: listValue > 0
+        ? Math.round(((listValue - inventoryValue) / listValue) * 1000) / 10
+        : 0,
+    },
+    categoryRevenue: categoryRevenue.rows,
+    topSellers: topSellers.rows,
+    priceBands: priceBands.rows,
   }
 }
 
