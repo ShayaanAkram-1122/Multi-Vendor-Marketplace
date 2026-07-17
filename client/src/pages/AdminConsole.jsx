@@ -16,6 +16,9 @@ import {
   Store,
   ChevronLeft,
   ChevronRight,
+  ArrowRightLeft,
+  Check,
+  X as XIcon,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { logoutUser } from '../services/authApi'
@@ -29,6 +32,11 @@ import {
   restoreModerationProduct,
   updateAdminUserRole,
 } from '../services/adminApi'
+import {
+  approveRoleRequest,
+  fetchAdminRoleRequests,
+  rejectRoleRequest,
+} from '../services/roleRequestApi'
 
 const FONT_IMPORT = `@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600;700&display=swap');`
 
@@ -122,6 +130,10 @@ export default function AdminConsole() {
   const [modError, setModError] = useState('')
   const [modActionId, setModActionId] = useState(null)
 
+  const [roleRequests, setRoleRequests] = useState([])
+  const [roleRequestsLoading, setRoleRequestsLoading] = useState(false)
+  const [roleRequestActionId, setRoleRequestActionId] = useState(null)
+
   const handleSignOut = async () => {
     try {
       await logoutUser()
@@ -182,12 +194,27 @@ export default function AdminConsole() {
     }
   }, [modSearch, modFilter, modPage])
 
+  const loadRoleRequests = useCallback(async () => {
+    setRoleRequestsLoading(true)
+    try {
+      const data = await fetchAdminRoleRequests()
+      setRoleRequests(data.data || [])
+    } catch {
+      setRoleRequests([])
+    } finally {
+      setRoleRequestsLoading(false)
+    }
+  }, [])
+
   useEffect(() => {
     if (!user || user.role !== 'admin') return
     if (tab === 'analytics') loadAnalytics()
-    if (tab === 'users') loadUsers()
+    if (tab === 'users') {
+      loadUsers()
+      loadRoleRequests()
+    }
     if (tab === 'moderation') loadModeration()
-  }, [user, tab, loadAnalytics, loadUsers, loadModeration])
+  }, [user, tab, loadAnalytics, loadUsers, loadModeration, loadRoleRequests])
 
   const roleBreakdown = useMemo(() => {
     if (!analytics?.users?.byRole) return []
@@ -195,7 +222,9 @@ export default function AdminConsole() {
   }, [analytics])
 
   const handleRoleChange = async (targetUser, nextRole) => {
+    if (targetUser.role === 'admin') return
     if (nextRole === targetUser.role) return
+    if (!['buyer', 'seller'].includes(nextRole)) return
     setUserActionId(targetUser.id)
     setUsersError('')
     try {
@@ -219,11 +248,40 @@ export default function AdminConsole() {
     try {
       await deleteAdminUser(targetUser.id)
       await loadUsers()
+      await loadRoleRequests()
       if (analytics) loadAnalytics()
     } catch (err) {
       setUsersError(err.message || 'Could not delete user')
     } finally {
       setUserActionId(null)
+    }
+  }
+
+  const handleApproveRequest = async (request) => {
+    setRoleRequestActionId(request.id)
+    setUsersError('')
+    try {
+      await approveRoleRequest(request.id)
+      await loadRoleRequests()
+      await loadUsers()
+      if (analytics) loadAnalytics()
+    } catch (err) {
+      setUsersError(err.message || 'Could not approve request')
+    } finally {
+      setRoleRequestActionId(null)
+    }
+  }
+
+  const handleRejectRequest = async (request) => {
+    setRoleRequestActionId(request.id)
+    setUsersError('')
+    try {
+      await rejectRoleRequest(request.id)
+      await loadRoleRequests()
+    } catch (err) {
+      setUsersError(err.message || 'Could not reject request')
+    } finally {
+      setRoleRequestActionId(null)
     }
   }
 
@@ -466,12 +524,66 @@ export default function AdminConsole() {
               <div>
                 <h2 className="font-['Fraunces'] text-2xl text-[#2B2620]">Users & roles</h2>
                 <p className="mt-1 text-sm text-[#6E6455]">
-                  Search accounts, change roles, or permanently delete a user.
+                  Switch buyers and sellers only. Admin roles are locked. Approve role-change requests below.
                 </p>
               </div>
               <p className="font-mono text-[11px] uppercase tracking-wide text-[#9A9284]">
                 {usersPagination.total} users
               </p>
+            </div>
+
+            <div className="rounded-sm border border-[#D9CFBB] bg-[#FBF8F2] p-4">
+              <div className="mb-3 flex items-center gap-2">
+                <ArrowRightLeft size={16} className="text-[#5C3A4B]" />
+                <h3 className="font-['Fraunces'] text-lg text-[#2B2620]">Role change requests</h3>
+              </div>
+              {roleRequestsLoading ? (
+                <p className="text-sm text-[#9A9284]">Loading requests…</p>
+              ) : roleRequests.length ? (
+                <ul className="space-y-3">
+                  {roleRequests.map((req) => {
+                    const busy = roleRequestActionId === req.id
+                    return (
+                      <li
+                        key={req.id}
+                        className="flex flex-col gap-3 rounded-sm border border-[#E7DFD0] bg-white px-3 py-3 sm:flex-row sm:items-center sm:justify-between"
+                      >
+                        <div className="min-w-0">
+                          <p className="font-medium text-[#2B2620]">{req.userName}</p>
+                          <p className="text-xs text-[#9A9284]">{req.userEmail}</p>
+                          <p className="mt-1 text-sm text-[#4A443A]">
+                            {req.fromRole} → <strong>{req.toRole}</strong>
+                            <span className="ml-2 text-xs text-[#9A9284]">{formatDate(req.createdAt)}</span>
+                          </p>
+                          {req.message && (
+                            <p className="mt-1 text-xs italic text-[#6E6455]">“{req.message}”</p>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            disabled={busy}
+                            onClick={() => handleApproveRequest(req)}
+                            className="inline-flex items-center gap-1.5 rounded-sm bg-[#6E7856] px-3 py-1.5 font-mono text-[10px] uppercase tracking-wide text-[#EEE7D8] hover:bg-[#5A6348] disabled:opacity-50 cursor-pointer"
+                          >
+                            <Check size={12} /> Approve
+                          </button>
+                          <button
+                            type="button"
+                            disabled={busy}
+                            onClick={() => handleRejectRequest(req)}
+                            className="inline-flex items-center gap-1.5 rounded-sm border border-[#D9CFBB] bg-white px-3 py-1.5 font-mono text-[10px] uppercase tracking-wide text-[#5C3A4B] hover:border-[#5C3A4B] disabled:opacity-50 cursor-pointer"
+                          >
+                            <XIcon size={12} /> Reject
+                          </button>
+                        </div>
+                      </li>
+                    )
+                  })}
+                </ul>
+              ) : (
+                <p className="text-sm text-[#9A9284]">No pending role-change requests.</p>
+              )}
             </div>
 
             <div className="flex flex-col gap-2 sm:flex-row">
@@ -539,16 +651,21 @@ export default function AdminConsole() {
                               <p className="text-xs text-[#9A9284]">{u.email}</p>
                             </td>
                             <td className="px-4 py-3">
-                              <select
-                                value={u.role}
-                                disabled={busy}
-                                onChange={(e) => handleRoleChange(u, e.target.value)}
-                                className={`rounded-full border-0 px-2.5 py-1 font-mono text-[10px] uppercase outline-none cursor-pointer disabled:opacity-50 ${roleBadgeClass(u.role)}`}
-                              >
-                                <option value="buyer">Buyer</option>
-                                <option value="seller">Seller</option>
-                                <option value="admin">Admin</option>
-                              </select>
+                              {u.role === 'admin' ? (
+                                <span className={`inline-block rounded-full px-2.5 py-1 font-mono text-[10px] uppercase ${roleBadgeClass(u.role)}`}>
+                                  Admin
+                                </span>
+                              ) : (
+                                <select
+                                  value={u.role}
+                                  disabled={busy}
+                                  onChange={(e) => handleRoleChange(u, e.target.value)}
+                                  className={`rounded-full border-0 px-2.5 py-1 font-mono text-[10px] uppercase outline-none cursor-pointer disabled:opacity-50 ${roleBadgeClass(u.role)}`}
+                                >
+                                  <option value="buyer">Buyer</option>
+                                  <option value="seller">Seller</option>
+                                </select>
+                              )}
                             </td>
                             <td className="px-4 py-3 text-[#6E6455]">{formatDate(u.createdAt)}</td>
                             <td className="px-4 py-3 text-right">

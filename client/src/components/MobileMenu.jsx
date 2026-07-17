@@ -1,4 +1,4 @@
-import { X, Store, Package, HelpCircle, MapPin } from 'lucide-react'
+import { X, Store, Package, HelpCircle, MapPin, ArrowRightLeft } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useShopActivity } from '../context/ShopActivityContext'
 
@@ -6,6 +6,7 @@ const CATEGORIES = ['Home & Living', 'Jewelry', 'Art & Prints', 'Vintage', 'Well
 
 export default function MobileMenu({ open, onClose, activeCategory, onSelectCategory, user }) {
   const { deliveryLabel } = useShopActivity()
+  const canRequestRole = user && (user.role === 'buyer' || user.role === 'seller')
 
   if (!open) return null
 
@@ -73,9 +74,15 @@ export default function MobileMenu({ open, onClose, activeCategory, onSelectCate
             <MapPin size={15} className="shrink-0" />
             <span className="truncate">{deliveryLabel}</span>
           </Link>
-          <Link to="/register" onClick={onClose} className="flex items-center gap-2 py-1.5">
-            <Store size={15} /> Sell on Vendora
-          </Link>
+          {canRequestRole ? (
+            <Link to="/role-request" onClick={onClose} className="flex items-center gap-2 py-1.5">
+              <ArrowRightLeft size={15} /> Request to change roles
+            </Link>
+          ) : !user ? (
+            <Link to="/register" onClick={onClose} className="flex items-center gap-2 py-1.5">
+              <Store size={15} /> Sell on Vendora
+            </Link>
+          ) : null}
           <Link to="/orders" onClick={onClose} className="flex items-center gap-2 py-1.5">
             <Package size={15} /> Track order
           </Link>

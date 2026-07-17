@@ -28,8 +28,9 @@ async function updateUserRole(req, res, next) {
     const userId = req.params.id
     const role = String(req.body.role || '').toLowerCase()
 
-    if (!['admin', 'seller', 'buyer'].includes(role)) {
-      return res.status(400).json({ message: 'Role must be admin, seller, or buyer' })
+    // Admins can only switch buyer ↔ seller. Admin roles are locked.
+    if (!['buyer', 'seller'].includes(role)) {
+      return res.status(400).json({ message: 'Only buyer and seller roles can be assigned' })
     }
 
     const existing = await adminQueries.findUserById(userId)
@@ -37,15 +38,16 @@ async function updateUserRole(req, res, next) {
       return res.status(404).json({ message: 'User not found' })
     }
 
-    if (existing.id === req.user.id && role !== 'admin') {
-      return res.status(400).json({ message: 'You cannot remove your own admin role' })
+    if (existing.role === 'admin') {
+      return res.status(403).json({ message: 'Admin roles cannot be changed' })
     }
 
-    if (existing.role === 'admin' && role !== 'admin') {
-      const adminCount = await adminQueries.countAdmins()
-      if (adminCount <= 1) {
-        return res.status(400).json({ message: 'Cannot demote the last admin account' })
-      }
+    if (!['buyer', 'seller'].includes(existing.role)) {
+      return res.status(400).json({ message: 'Only buyer and seller accounts can have their role changed' })
+    }
+
+    if (existing.role === role) {
+      return res.json({ message: 'Role unchanged', user: existing })
     }
 
     const user = await adminQueries.updateUserRole(userId, role)

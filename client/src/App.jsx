@@ -14,6 +14,7 @@ import NewsletterConfirmed from './pages/NewsletterConfirmed'
 import CartPage from './pages/CartPage'
 import HelpPage from './pages/HelpPage'
 import DeliveryLocationPage from './pages/DeliveryLocationPage'
+import RoleRequestPage from './pages/RoleRequestPage'
 import ToastStack from './components/ToastStack'
 
 export default function App() {
@@ -27,6 +28,7 @@ export default function App() {
             <Route path="/cart" element={<CartPage />} />
             <Route path="/help" element={<HelpPage />} />
             <Route path="/delivery-location" element={<DeliveryLocationPage />} />
+            <Route path="/role-request" element={<RoleRequestPage />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
