@@ -52,6 +52,7 @@ export function ShopActivityProvider({ children }) {
   const [notifications, setNotifications] = useState([])
   const [cart, setCart] = useState([])
   const [deliveryLocation, setDeliveryLocation] = useState(null)
+  const [toasts, setToasts] = useState([])
   const [ready, setReady] = useState(false)
 
   useEffect(() => {
@@ -102,12 +103,33 @@ export function ShopActivityProvider({ children }) {
     return note
   }, [])
 
+  const showToast = useCallback((partial) => {
+    const toast = {
+      id: makeId(),
+      type: partial.type || 'success',
+      title: partial.title,
+      body: partial.body || '',
+      duration: partial.duration ?? 3200,
+    }
+    setToasts((prev) => [...prev, toast].slice(-4))
+    return toast
+  }, [])
+
+  const dismissToast = useCallback((id) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id))
+  }, [])
+
   const toggleFavorite = useCallback((product) => {
     if (!product?.id) return { added: false }
 
     const exists = favorites.some((f) => String(f.id) === String(product.id))
     if (exists) {
       setFavorites((prev) => prev.filter((f) => String(f.id) !== String(product.id)))
+      showToast({
+        type: 'favorite',
+        title: 'Removed from favourites',
+        body: `${product.name} was removed from your favourites.`,
+      })
       return { added: false }
     }
 
@@ -131,8 +153,14 @@ export function ShopActivityProvider({ children }) {
       image: product.image || null,
     })
 
+    showToast({
+      type: 'favorite',
+      title: 'Item added successfully to favourites',
+      body: product.name,
+    })
+
     return { added: true }
-  }, [favorites, pushNotification])
+  }, [favorites, pushNotification, showToast])
 
   const removeFavorite = useCallback((productId) => {
     setFavorites((prev) => prev.filter((f) => String(f.id) !== String(productId)))
@@ -160,7 +188,13 @@ export function ShopActivityProvider({ children }) {
       productId: product.id,
       image: product.image || null,
     })
-  }, [pushNotification])
+
+    showToast({
+      type: 'cart',
+      title: 'Item added successfully to cart',
+      body: product.name,
+    })
+  }, [pushNotification, showToast])
 
   const updateCartQuantity = useCallback((productId, quantity) => {
     const nextQty = Math.max(0, Number(quantity) || 0)
@@ -283,6 +317,9 @@ export function ShopActivityProvider({ children }) {
       deliveryLabel,
       saveDeliveryLocation,
       clearDeliveryLocation,
+      toasts,
+      showToast,
+      dismissToast,
     }),
     [
       ready,
@@ -308,6 +345,9 @@ export function ShopActivityProvider({ children }) {
       deliveryLabel,
       saveDeliveryLocation,
       clearDeliveryLocation,
+      toasts,
+      showToast,
+      dismissToast,
     ],
   )
 

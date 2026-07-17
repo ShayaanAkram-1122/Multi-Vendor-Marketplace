@@ -14,6 +14,7 @@ import NewsletterConfirmed from './pages/NewsletterConfirmed'
 import CartPage from './pages/CartPage'
 import HelpPage from './pages/HelpPage'
 import DeliveryLocationPage from './pages/DeliveryLocationPage'
+import ToastStack from './components/ToastStack'
 
 export default function App() {
   return (
@@ -35,6 +36,7 @@ export default function App() {
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/admin/register" element={<AdminRegister />} />
           </Routes>
+          <ToastStack />
         </BrowserRouter>
       </ShopActivityProvider>
     </AuthProvider>
