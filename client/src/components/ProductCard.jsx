@@ -4,13 +4,19 @@ import { useShopActivity } from '../context/ShopActivityContext'
 export default function ProductCard({ product, size = 'default' }) {
   const { name, seller, price, rating, image, aiPick, tilt } = product
   const width = size === 'compact' ? 'w-56' : 'w-full'
-  const { isFavorite, toggleFavorite } = useShopActivity()
+  const { isFavorite, toggleFavorite, addToCart } = useShopActivity()
   const favorited = isFavorite(product.id)
 
   const handleFavorite = (e) => {
     e.preventDefault()
     e.stopPropagation()
     toggleFavorite(product)
+  }
+
+  const handleAddToCart = (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    addToCart(product)
   }
 
   return (
@@ -78,8 +84,9 @@ export default function ProductCard({ product, size = 'default' }) {
               </button>
               <button
                 type="button"
+                onClick={handleAddToCart}
                 aria-label={`Add ${name} to bag`}
-                className="rounded-full bg-[#2B2620] p-1.5 text-[#EEE7D8] opacity-0 transition-opacity duration-200 group-hover:opacity-100 hover:bg-[#5C3A4B] cursor-pointer"
+                className="rounded-full bg-[#2B2620] p-1.5 text-[#EEE7D8] opacity-0 transition-opacity duration-200 group-hover:opacity-100 hover:bg-[#5C3A4B] cursor-pointer sm:opacity-100"
               >
                 <ShoppingBag size={14} />
               </button>

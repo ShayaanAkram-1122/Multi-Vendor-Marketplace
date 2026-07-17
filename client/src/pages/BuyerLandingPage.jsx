@@ -20,7 +20,6 @@ export default function BuyerLandingPage() {
   const [loading, setLoading] = useState(true)
   const [aiPicks, setAiPicks] = useState([])
   const [shelves, setShelves] = useState({})
-  const [cartCount] = useState(0)
 
   useEffect(() => {
     getAiPicks(10).then(setAiPicks)
@@ -47,7 +46,6 @@ export default function BuyerLandingPage() {
         activeCategory={activeCategory}
         onSelectCategory={setActiveCategory}
         onSearch={setSearch}
-        cartCount={cartCount}
         user={user}
       />
 

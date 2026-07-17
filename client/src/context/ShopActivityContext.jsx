@@ -24,18 +24,39 @@ function makeId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
 }
 
+function toCartItem(product, quantity = 1) {
+  const discount = Number(product.discountPercent || product.discount_percent || 0)
+  const price = Number(product.price) || 0
+  return {
+    id: product.id,
+    name: product.name,
+    seller: product.seller,
+    price,
+    discountPercent: discount,
+    image: product.image || null,
+    quantity: Math.max(1, quantity),
+  }
+}
+
+function lineTotal(item) {
+  const discount = Number(item.discountPercent) || 0
+  const unit = discount > 0 ? item.price * (1 - discount / 100) : item.price
+  return unit * item.quantity
+}
+
 export function ShopActivityProvider({ children }) {
   const { user } = useAuth()
   const userKey = user?.id || 'guest'
 
   const [favorites, setFavorites] = useState([])
   const [notifications, setNotifications] = useState([])
+  const [cart, setCart] = useState([])
   const [ready, setReady] = useState(false)
 
-  // Load per-user (or guest) state when auth identity changes
   useEffect(() => {
     setFavorites(readJson(storageKey(userKey, 'favorites'), []))
     setNotifications(readJson(storageKey(userKey, 'notifications'), []))
+    setCart(readJson(storageKey(userKey, 'cart'), []))
     setReady(true)
   }, [userKey])
 
@@ -48,6 +69,11 @@ export function ShopActivityProvider({ children }) {
     if (!ready) return
     writeJson(storageKey(userKey, 'notifications'), notifications)
   }, [notifications, userKey, ready])
+
+  useEffect(() => {
+    if (!ready) return
+    writeJson(storageKey(userKey, 'cart'), cart)
+  }, [cart, userKey, ready])
 
   const isFavorite = useCallback(
     (productId) => favorites.some((f) => String(f.id) === String(productId)),
@@ -105,6 +131,50 @@ export function ShopActivityProvider({ children }) {
     setFavorites((prev) => prev.filter((f) => String(f.id) !== String(productId)))
   }, [])
 
+  const addToCart = useCallback((product, quantity = 1) => {
+    if (!product?.id) return
+
+    setCart((prev) => {
+      const existing = prev.find((item) => String(item.id) === String(product.id))
+      if (existing) {
+        return prev.map((item) =>
+          String(item.id) === String(product.id)
+            ? { ...item, quantity: item.quantity + Math.max(1, quantity) }
+            : item,
+        )
+      }
+      return [...prev, toCartItem(product, quantity)]
+    })
+
+    pushNotification({
+      type: 'cart',
+      title: 'Added to bag',
+      body: `${product.name} was added to your shopping bag.`,
+      productId: product.id,
+      image: product.image || null,
+    })
+  }, [pushNotification])
+
+  const updateCartQuantity = useCallback((productId, quantity) => {
+    const nextQty = Math.max(0, Number(quantity) || 0)
+    setCart((prev) => {
+      if (nextQty <= 0) {
+        return prev.filter((item) => String(item.id) !== String(productId))
+      }
+      return prev.map((item) =>
+        String(item.id) === String(productId) ? { ...item, quantity: nextQty } : item,
+      )
+    })
+  }, [])
+
+  const removeFromCart = useCallback((productId) => {
+    setCart((prev) => prev.filter((item) => String(item.id) !== String(productId)))
+  }, [])
+
+  const clearCart = useCallback(() => {
+    setCart([])
+  }, [])
+
   const markAsRead = useCallback((id) => {
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
@@ -130,6 +200,16 @@ export function ShopActivityProvider({ children }) {
     [notifications],
   )
 
+  const cartCount = useMemo(
+    () => cart.reduce((sum, item) => sum + item.quantity, 0),
+    [cart],
+  )
+
+  const cartSubtotal = useMemo(
+    () => cart.reduce((sum, item) => sum + lineTotal(item), 0),
+    [cart],
+  )
+
   const value = useMemo(
     () => ({
       favorites,
@@ -144,6 +224,14 @@ export function ShopActivityProvider({ children }) {
       markAsUnread,
       markAllAsRead,
       clearAllNotifications,
+      cart,
+      cartCount,
+      cartSubtotal,
+      addToCart,
+      updateCartQuantity,
+      removeFromCart,
+      clearCart,
+      lineTotal,
     }),
     [
       favorites,
@@ -157,6 +245,13 @@ export function ShopActivityProvider({ children }) {
       markAsUnread,
       markAllAsRead,
       clearAllNotifications,
+      cart,
+      cartCount,
+      cartSubtotal,
+      addToCart,
+      updateCartQuantity,
+      removeFromCart,
+      clearCart,
     ],
   )
 

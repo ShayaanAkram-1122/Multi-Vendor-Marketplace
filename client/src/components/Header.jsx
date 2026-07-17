@@ -5,6 +5,7 @@ import UtilityBar from './UtilityBar'
 import MobileMenu from './MobileMenu'
 import NotificationsPanel from './NotificationsPanel'
 import FavoritesPanel from './FavoritesPanel'
+import CartPanel from './CartPanel'
 import { useAuth } from '../context/AuthContext'
 import { useShopActivity } from '../context/ShopActivityContext'
 import { logoutUser } from '../services/authApi'
@@ -12,10 +13,9 @@ import { logoutUser } from '../services/authApi'
 const CATEGORIES = ['Home & Living', 'Jewelry', 'Art & Prints', 'Vintage', 'Wellness', 'Stationery']
 
 export default function Header({
-  activeCategory,
+  activeCategory = null,
   onSelectCategory,
   onSearch,
-  cartCount = 0,
   user = null,
 }) {
   const navigate = useNavigate()
@@ -30,32 +30,49 @@ export default function Header({
     markAsUnread,
     markAllAsRead,
     clearAllNotifications,
+    cart,
+    cartCount,
+    cartSubtotal,
+    updateCartQuantity,
+    removeFromCart,
+    clearCart,
+    lineTotal,
   } = useShopActivity()
 
   const [mobileOpen, setMobileOpen] = useState(false)
   const [accountOpen, setAccountOpen] = useState(false)
   const [notifsOpen, setNotifsOpen] = useState(false)
   const [favoritesOpen, setFavoritesOpen] = useState(false)
+  const [cartOpen, setCartOpen] = useState(false)
   const accountRef = useRef(null)
   const notifsRef = useRef(null)
   const favoritesRef = useRef(null)
+  const cartRef = useRef(null)
 
   useEffect(() => {
     const onClick = (e) => {
       if (accountRef.current && !accountRef.current.contains(e.target)) setAccountOpen(false)
       if (notifsRef.current && !notifsRef.current.contains(e.target)) setNotifsOpen(false)
       if (favoritesRef.current && !favoritesRef.current.contains(e.target)) setFavoritesOpen(false)
+      if (cartRef.current && !cartRef.current.contains(e.target)) setCartOpen(false)
     }
     document.addEventListener('mousedown', onClick)
     return () => document.removeEventListener('mousedown', onClick)
   }, [])
+
+  const closeOthers = (except) => {
+    if (except !== 'notifs') setNotifsOpen(false)
+    if (except !== 'favorites') setFavoritesOpen(false)
+    if (except !== 'cart') setCartOpen(false)
+    if (except !== 'account') setAccountOpen(false)
+  }
 
   const handleSignOut = async () => {
     setAccountOpen(false)
     try {
       await logoutUser()
     } catch {
-      // ignore network errors on logout
+      // ignore
     }
     logout()
     navigate('/login')
@@ -109,9 +126,8 @@ export default function Header({
                 aria-label="Notifications"
                 aria-expanded={notifsOpen}
                 onClick={() => {
+                  closeOthers('notifs')
                   setNotifsOpen((v) => !v)
-                  setFavoritesOpen(false)
-                  setAccountOpen(false)
                 }}
                 className="relative hover:text-[#5C3A4B] cursor-pointer"
               >
@@ -140,9 +156,8 @@ export default function Header({
                 aria-label="Favourites"
                 aria-expanded={favoritesOpen}
                 onClick={() => {
+                  closeOthers('favorites')
                   setFavoritesOpen((v) => !v)
-                  setNotifsOpen(false)
-                  setAccountOpen(false)
                 }}
                 className="relative hover:text-[#5C3A4B] cursor-pointer"
               >
@@ -161,23 +176,43 @@ export default function Header({
               />
             </div>
 
-            <button type="button" aria-label="Bag" className="relative hover:text-[#5C3A4B] cursor-pointer">
-              <ShoppingBag size={20} />
-              {cartCount > 0 && (
-                <span className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#D6A24A] text-[9px] font-bold text-[#2B2620]">
-                  {cartCount}
-                </span>
-              )}
-            </button>
+            <div className="relative" ref={cartRef}>
+              <button
+                type="button"
+                aria-label="Shopping bag"
+                aria-expanded={cartOpen}
+                onClick={() => {
+                  closeOthers('cart')
+                  setCartOpen((v) => !v)
+                }}
+                className="relative hover:text-[#5C3A4B] cursor-pointer"
+              >
+                <ShoppingBag size={20} />
+                {cartCount > 0 && (
+                  <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#D6A24A] px-0.5 text-[9px] font-bold text-[#2B2620]">
+                    {cartCount > 9 ? '9+' : cartCount}
+                  </span>
+                )}
+              </button>
+              <CartPanel
+                open={cartOpen}
+                onClose={() => setCartOpen(false)}
+                cart={cart}
+                cartSubtotal={cartSubtotal}
+                onUpdateQuantity={updateCartQuantity}
+                onRemove={removeFromCart}
+                onClear={clearCart}
+                lineTotal={lineTotal}
+              />
+            </div>
 
             {user ? (
               <div className="relative" ref={accountRef}>
                 <button
                   type="button"
                   onClick={() => {
+                    closeOthers('account')
                     setAccountOpen((v) => !v)
-                    setNotifsOpen(false)
-                    setFavoritesOpen(false)
                   }}
                   className="flex items-center gap-1.5 hover:text-[#5C3A4B] cursor-pointer"
                 >
@@ -196,6 +231,7 @@ export default function Header({
                     </div>
                     <Link to="/account" className="block px-4 py-2 text-sm text-[#2B2620] hover:bg-[#EEE7D8]" onClick={() => setAccountOpen(false)}>My Account</Link>
                     <Link to="/orders" className="block px-4 py-2 text-sm text-[#2B2620] hover:bg-[#EEE7D8]" onClick={() => setAccountOpen(false)}>My Orders</Link>
+                    <Link to="/cart" className="block px-4 py-2 text-sm text-[#2B2620] hover:bg-[#EEE7D8]" onClick={() => setAccountOpen(false)}>Your bag</Link>
                     <button type="button" onClick={handleSignOut} className="block w-full px-4 py-2 text-left text-sm text-[#5C3A4B] hover:bg-[#EEE7D8] cursor-pointer">
                       Sign Out
                     </button>
@@ -215,32 +251,34 @@ export default function Header({
           </div>
         </div>
 
-        <nav className="mx-auto hidden max-w-6xl gap-2 overflow-x-auto px-4 pb-3 sm:flex sm:px-6">
-          {CATEGORIES.map((cat) => {
-            const active = activeCategory === cat
-            return (
-              <button
-                key={cat}
-                type="button"
-                onClick={() => onSelectCategory(active ? null : cat)}
-                className={`shrink-0 rounded-full border px-3.5 py-1.5 font-mono text-xs uppercase tracking-wide transition-colors cursor-pointer ${
-                  active
-                    ? 'border-[#6E7856] bg-[#6E7856] text-[#EEE7D8]'
-                    : 'border-[#D9CFBB] bg-transparent text-[#4A443A] hover:border-[#6E7856] hover:text-[#6E7856]'
-                }`}
-              >
-                {cat}
-              </button>
-            )
-          })}
-        </nav>
+        {typeof onSelectCategory === 'function' && (
+          <nav className="mx-auto hidden max-w-6xl gap-2 overflow-x-auto px-4 pb-3 sm:flex sm:px-6">
+            {CATEGORIES.map((cat) => {
+              const active = activeCategory === cat
+              return (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => onSelectCategory(active ? null : cat)}
+                  className={`shrink-0 rounded-full border px-3.5 py-1.5 font-mono text-xs uppercase tracking-wide transition-colors cursor-pointer ${
+                    active
+                      ? 'border-[#6E7856] bg-[#6E7856] text-[#EEE7D8]'
+                      : 'border-[#D9CFBB] bg-transparent text-[#4A443A] hover:border-[#6E7856] hover:text-[#6E7856]'
+                  }`}
+                >
+                  {cat}
+                </button>
+              )
+            })}
+          </nav>
+        )}
       </header>
 
       <MobileMenu
         open={mobileOpen}
         onClose={() => setMobileOpen(false)}
         activeCategory={activeCategory}
-        onSelectCategory={onSelectCategory}
+        onSelectCategory={onSelectCategory || (() => {})}
         user={user}
       />
     </>
