@@ -26,6 +26,15 @@ The React/Vite frontend for Vendora, an AI-powered multi-vendor marketplace.
 - Leaflet/OpenStreetMap location selection and geocoding
 - Responsive desktop and mobile navigation
 
+## Progress reporting
+
+The repository-level [Weekly Progress](../README.md#weekly-progress) log records:
+
+- Week-wise tasks completed
+- Features implemented
+- Progress made
+- Challenges faced and how they were solved
+
 ## Local development
 
 ```bash

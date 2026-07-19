@@ -187,30 +187,39 @@ vendora/
 
 ## Weekly Progress
 
+Each weekly entry records:
+
+- **Week-wise tasks completed**
+- **Features implemented**
+- **Progress made**
+- **Challenges faced and how they were solved**
+
 ### Week of July 6–12, 2026
 
 Focus this week: auth, buyer shop experience, admin access, transactional email, favourites, and in-app notifications.
 
-#### Authentication & sessions
+#### Week-wise tasks completed and features implemented
+
+##### Authentication & sessions
 - Buyer/seller **register** and **login** with bcrypt password hashing
 - **JWT access tokens** + httpOnly **refresh cookies**, with `/auth/me`, `/auth/refresh`, and logout
 - Shared **`AuthContext`** so the shop header shows the signed-in user (avatar/name) instead of Sign In / Register
 - Session hydrate now **refreshes expired access tokens** (or clears a dead session) instead of leaving a stale logged-in UI
 - Role guards for **admin**, **seller**, and **buyer**
 
-#### Buyer marketplace (`/shop`)
+##### Buyer marketplace (`/shop`)
 - Buyer landing page with utility bar, branded header + logo, search, category pills, flatlay hero, and product shelves
 - Products API with **pagination**, **search**, **category**, and **sort**
 - Catalog seed: **~300 products** across **36 sellers**
 - Header spacing polish and account menu with sign-out
 
-#### Admin console access
+##### Admin console access
 - Dedicated **admin login** and **admin register** flows (`/admin/login`, `/admin/register`) with branded `AuthLayout`
 - Admin registration gated by **`ADMIN_INVITE_CODE`**
 - Entry points from regular login/register pages
 - Lightweight **admin console** shell after successful admin sign-in
 
-#### Email (SMTP)
+##### Email (SMTP)
 - Gmail SMTP wiring via Nodemailer (`SMTP_*` env vars)
 - **Successful-login email** sent to the account owner on every login
 - **Forgot-password email** with a secure reset link (`/reset-password?token=…`)
@@ -218,13 +227,27 @@ Focus this week: auth, buyer shop experience, admin access, transactional email,
 - Branded HTML email templates (Vendora header, CTAs for reset / sign-in / shop)
 - Forgot-password UI now shows “Check your email” instead of exposing the reset token in the browser
 
-#### Favourites & notifications
+##### Favourites & notifications
 - Heart button on product cards to save / unsave favourites (placed next to rating so it doesn’t overlap the price tag)
 - Header **favourites** icon with count badge and a popup list of saved products
 - Favouriting a product creates an in-app **notification** (“Added to favourites”)
 - Header **bell** popup with unread badge count
 - Per-notification **Mark read** / **Mark unread**, plus **Mark all read** and **Clear all**
 - Favourites and notifications persist in `localStorage` (per signed-in user or guest)
+
+#### Progress made
+- Completed the core authentication lifecycle from registration through token refresh, logout, forgot password, and password reset
+- Replaced the initial static marketplace concept with a database-backed catalog and reusable product API
+- Established separate buyer and admin entry points with role-aware navigation
+- Added the first persistent buyer engagement features through favourites and notifications
+- Established a reusable SMTP foundation for later support, newsletter, and sale-alert emails
+
+#### Challenges faced and solutions
+- **Expired tokens left stale logged-in UI:** session hydration was updated to try `/auth/refresh` and clear invalid sessions when refresh fails
+- **Sensitive reset information could appear in the browser:** reset tokens were moved to email links and the UI now only confirms that an email was sent
+- **Header actions competed for limited space and overlapped product pricing:** spacing was refined and the favourite control was moved beside the rating
+- **User activity disappeared after refresh:** favourites and notifications were stored under per-user/guest `localStorage` keys
+- **Admin registration needed protection:** registration was gated behind `ADMIN_INVITE_CODE` and admin APIs were protected with role middleware
 
 #### Still ahead
 - Seller dashboard, Stripe checkout, Socket.IO chat, OpenAI descriptions/recommendations
@@ -235,32 +258,34 @@ Focus this week: auth, buyer shop experience, admin access, transactional email,
 
 Focus this week: shopping flow, customer support, delivery location, admin operations, role requests, sale alerts, and UI polish.
 
-#### Cart and shopping feedback
+#### Week-wise tasks completed and features implemented
+
+##### Cart and shopping feedback
 - Added a persistent **shopping cart** with add-to-bag actions, quantity controls, item removal, and per-user/guest storage
 - Added a header cart panel and a full **`/cart`** page
 - Redesigned the cart with clearer item rows, sale savings, delivery information, a sticky order summary, and an improved empty state
 - Added success toast messages when products are added to the cart or favourites
 - Product cards and cart rows now display sale percentages, original prices, and discounted prices
 
-#### Help centre and support email
+##### Help centre and support email
 - Replaced the old `mailto:` Help action with a dedicated **`/help`** page
 - Added “How it works” guidance and a **Contact us** form
 - Help requests are sent through the server to `SMTP_USER`, use the customer email as `replyTo`, and send a confirmation email to the customer
 
-#### Newsletter and sale alerts
+##### Newsletter and sale alerts
 - Added newsletter subscription and Yes/No preference confirmation for regular product and discount updates
 - Stored marketing preferences in `newsletter_subscribers`
 - New-product and sale emails are sent only to subscribers with `marketing_opt_in = TRUE`
 - Admin-applied sales trigger a branded deal email for opted-in subscribers
 - Logged-in buyers who are not opted in receive an in-app sale popup instead
 
-#### Delivery location
+##### Delivery location
 - Added a separate **`/delivery-location`** page
 - Users can enter an address manually, find a typed address on the map, click the world map to drop a pin, or use browser geolocation
 - Integrated **Leaflet**, **OpenStreetMap**, and Nominatim forward/reverse geocoding
 - Delivery locations persist per user/guest, update the utility-bar label, and support edit, clear, and add-new actions
 
-#### Admin console
+##### Admin console
 - Rebuilt **`/admin`** with Analytics, Users & Roles, and Moderation sections
 - Analytics now reports users, sellers, products, newsletter activity, inventory value, category value, top sellers, price bands, ratings, and low-stock products
 - Admins can search users, delete accounts, and switch only **buyer ↔ seller** roles; admin roles are locked
@@ -269,10 +294,26 @@ Focus this week: shopping flow, customer support, delivery location, admin opera
 - Added per-product sale controls, including sale percentage, clear-sale action, and an “On sale” filter
 - Hidden products are excluded from the public catalog and AI-pick feeds
 
-#### UI and quality improvements
+##### UI and quality improvements
 - Added favourites/cart toast notifications and sale badges
 - Improved desktop and mobile utility navigation for Help, delivery location, and role requests
 - Added safety checks that prevent admins from changing admin roles or deleting their own account
+
+#### Progress made
+- Expanded the buyer flow from product discovery into a usable cart, delivery-location, discount, and checkout-preparation experience
+- Replaced external email-client support with an in-app help workflow backed by SMTP
+- Turned the admin shell into an operational console with analytics, account management, moderation, role requests, and sale controls
+- Added targeted sale communication: opted-in subscribers receive email while other logged-in buyers receive an in-app popup
+- Improved consistency across desktop and mobile navigation and added immediate feedback for important buyer actions
+
+#### Challenges faced and solutions
+- **Help still opened the system email client:** the `mailto:` link was removed, Help became a dedicated route, and stale-bundle behavior was verified with a hard refresh/browser check
+- **Delivery labels stayed tied to an old map point:** every map selection now reverse-geocodes the new coordinates and regenerates the short label
+- **Location setup needed several input methods:** manual entry, forward geocoding, map-pin selection, and browser geolocation were combined on one dedicated page
+- **A second Vite process caused port confusion and Chrome frame errors:** the active process and port were verified, duplicate dev servers were identified, and the app was reopened on the correct origin
+- **Role management could accidentally alter administrators:** both API and UI now lock admin roles and allow only buyer-to-seller or seller-to-buyer changes
+- **Sale alerts needed different behavior by preference:** email delivery is filtered by `marketing_opt_in = TRUE`; non-opted-in logged-in buyers receive a deduplicated in-app sale popup
+- **Hidden listings could still leak into buyer feeds:** public catalog and AI-pick queries now explicitly exclude moderated products
 
 #### Still ahead
 - Stripe checkout and vendor payouts
