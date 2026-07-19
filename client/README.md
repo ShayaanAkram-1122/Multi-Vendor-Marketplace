@@ -1,16 +1,47 @@
-# React + Vite
+# Vendora Client
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+The React/Vite frontend for Vendora, an AI-powered multi-vendor marketplace.
 
-Currently, two official plugins are available:
+## Current pages
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+| Route | Purpose |
+|-------|---------|
+| `/` | Marketing landing page and newsletter signup |
+| `/shop` | Buyer marketplace with search, filters, favourites, cart, and sale alerts |
+| `/cart` | Full shopping bag and order summary |
+| `/delivery-location` | Manual address and OpenStreetMap location picker |
+| `/help` | Help guide and contact form |
+| `/role-request` | Buyer/seller role-change request |
+| `/login`, `/register` | Buyer and seller authentication |
+| `/admin` | Admin analytics, users/roles, moderation, and sale controls |
 
-## React Compiler
+## Main frontend features
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- JWT session hydration through `AuthContext`
+- Per-user/guest favourites, notifications, cart, and delivery location through `ShopActivityContext`
+- Product search, category filtering, sorting, pagination, AI-pick shelves, and sale pricing
+- Header panels for notifications, favourites, and the shopping bag
+- Toast feedback for cart and favourite actions
+- Sale popup for logged-in buyers who do not receive sale-alert emails
+- Leaflet/OpenStreetMap location selection and geocoding
+- Responsive desktop and mobile navigation
 
-## Expanding the Oxlint configuration
+## Local development
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+```bash
+npm install
+npm run dev
+```
+
+The app runs at `http://localhost:5173` and proxies `/api` requests to the Express server on port `4000`.
+
+Useful commands:
+
+```bash
+npm run dev
+npm run build
+npm run lint
+npm run preview
+```
+
+See the repository [README](../README.md) for full setup, environment variables, database commands, and weekly progress.

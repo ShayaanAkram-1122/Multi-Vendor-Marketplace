@@ -2,7 +2,7 @@
 
 **An AI-powered multi-vendor marketplace where sellers grow their business and buyers discover products they love.**
 
-[![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=white)](https://react.dev/)
+[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)](https://react.dev/)
 [![Node.js](https://img.shields.io/badge/Node.js-Express-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Database-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![OpenAI](https://img.shields.io/badge/OpenAI-API-412991?logo=openai&logoColor=white)](https://openai.com/)
@@ -14,7 +14,7 @@
 
 ## About the Project
 
-Vendora is a full-stack multi-vendor marketplace built on the PERN stack (PostgreSQL, Express.js, React 18, Node.js). It connects independent sellers with buyers on a single platform while giving administrators the tools to oversee operations, enforce policies, and keep the marketplace healthy.
+Vendora is a full-stack multi-vendor marketplace built on the PERN stack (PostgreSQL, Express.js, React, Node.js). It connects independent sellers with buyers on a single platform while giving administrators the tools to oversee operations, enforce policies, and keep the marketplace healthy.
 
 **The problem it solves:** Small and mid-sized sellers often lack the infrastructure to run their own storefronts—payment processing, inventory management, customer communication, and marketing tools are expensive and fragmented. Buyers, in turn, want a trusted place to browse products from multiple vendors without juggling separate checkout flows. Vendora brings everything under one roof.
 
@@ -30,15 +30,21 @@ Vendora is a full-stack multi-vendor marketplace built on the PERN stack (Postgr
 
 ## Key Features
 
-- **AI product description generator & smart recommendations** — Sellers can generate polished product copy with a single click using the OpenAI API. Buyers receive personalized product suggestions based on browsing history and purchase patterns.
+### Implemented
 
-- **Stripe payments with vendor payouts** — Secure checkout powered by Stripe, with automatic commission splits and scheduled payouts to sellers via Stripe Connect.
+- **Buyer marketplace** — Search, category filters, sorting, product shelves, AI-pick labels, favourites, cart, sale pricing, and per-user local persistence.
+- **Authentication and roles** — Buyer, seller, and admin registration/login using JWT access tokens, refresh cookies, password reset, and role-protected APIs.
+- **Admin console** — Marketplace analytics, inventory-value reporting, users and roles, buyer/seller role-change requests, listing moderation, user deletion, and product sale controls.
+- **Email and in-app updates** — Branded SMTP emails for login and password flows, help requests, newsletter preferences, and product-sale alerts.
+- **Delivery location** — Separate address page with manual entry, browser geolocation, OpenStreetMap/Leaflet pin selection, reverse geocoding, and saved location labels.
+- **Help centre** — Dedicated help page with usage guidance and a support form delivered to the configured SMTP inbox.
 
-- **Real-time buyer–seller chat** — Built on Socket.IO, enabling instant messaging between buyers and sellers for pre-sale questions, order updates, and support—without leaving the platform.
+### Planned
 
-- **Analytics dashboard for sellers** — Interactive charts and KPIs (powered by Recharts) covering revenue trends, top products, order volume, and conversion metrics so sellers can make data-driven decisions.
-
-- **Email & in-app notification system** — Sellers and buyers stay informed through transactional emails (order confirmations, payout notices) and in-app alerts for messages, order status changes, and platform announcements.
+- **Stripe checkout and vendor payouts**
+- **Seller inventory and order dashboard**
+- **Socket.IO buyer–seller chat**
+- **OpenAI-generated product descriptions and personalized recommendations**
 
 ---
 
@@ -46,13 +52,15 @@ Vendora is a full-stack multi-vendor marketplace built on the PERN stack (Postgr
 
 | Category | Technologies |
 |----------|-------------|
-| **Frontend** | React 18, React Router, Axios, Recharts, Tailwind CSS |
+| **Frontend** | React, Vite, React Router, Axios, Tailwind CSS, Leaflet / OpenStreetMap |
 | **Backend** | Node.js, Express.js, REST API |
 | **Database** | PostgreSQL (`pg` + SQL schema / migrate scripts) |
 | **Auth** | JWT access + refresh cookies, bcrypt, role-based access (Admin / Seller / Buyer) |
-| **AI** | OpenAI API (GPT) — product descriptions, recommendation engine |
-| **Payments** | Stripe, Stripe Connect (vendor payouts) |
-| **Real-Time** | Socket.IO (buyer–seller chat, live notifications) |
+| **Email** | Nodemailer + SMTP, newsletter preference and sale-alert workflows |
+| **Maps** | Leaflet, React Leaflet, OpenStreetMap, Nominatim geocoding |
+| **AI** | OpenAI API (planned: product descriptions and recommendations) |
+| **Payments** | Stripe / Stripe Connect (planned) |
+| **Real-Time** | Socket.IO (planned) |
 | **DevOps** | Docker, GitHub Actions, environment-based configuration |
 
 ---
@@ -117,24 +125,23 @@ Vendora is organized as a monorepo with separate `client` and `server` packages:
 
 ```
 vendora/
-├── client/                 # React 18 frontend (Vite + Tailwind)
+├── client/                 # React frontend (Vite + Tailwind)
 │   ├── public/
 │   ├── src/
-│   │   ├── components/     # Header, product cards, AuthLayout, etc.
-│   │   ├── context/        # AuthProvider / useAuth
-│   │   ├── lib/            # API helpers (products, adminAuth)
-│   │   ├── pages/          # Landing, shop, auth, admin
-│   │   ├── services/       # authApi
-│   │   └── data/           # Local catalog fallback
+│   │   ├── components/     # Header, product cards, panels, map, toast, sale popup
+│   │   ├── context/        # Auth and shop activity state
+│   │   ├── lib/            # Product and newsletter helpers
+│   │   ├── pages/          # Landing, shop, cart, help, location, auth, admin
+│   │   └── services/       # Auth, admin, and role-request API clients
 │   └── package.json
 │
 ├── server/                 # Express.js backend
 │   ├── src/
 │   │   ├── config/         # DB pool
-│   │   ├── controllers/    # Auth, products
+│   │   ├── controllers/    # Auth, products, admin, sales, help, newsletter
 │   │   ├── db/             # schema.sql, migrate, seed, queries
 │   │   ├── middleware/     # JWT auth + role guards
-│   │   ├── routes/         # /api/auth, /api/products
+│   │   ├── routes/         # Auth, products, admin, sales, help, newsletter
 │   │   └── utils/          # tokens, mail
 │   └── package.json
 │
@@ -221,6 +228,57 @@ Focus this week: auth, buyer shop experience, admin access, transactional email,
 
 #### Still ahead
 - Seller dashboard, Stripe checkout, Socket.IO chat, OpenAI descriptions/recommendations
+
+---
+
+### Week of July 13–19, 2026
+
+Focus this week: shopping flow, customer support, delivery location, admin operations, role requests, sale alerts, and UI polish.
+
+#### Cart and shopping feedback
+- Added a persistent **shopping cart** with add-to-bag actions, quantity controls, item removal, and per-user/guest storage
+- Added a header cart panel and a full **`/cart`** page
+- Redesigned the cart with clearer item rows, sale savings, delivery information, a sticky order summary, and an improved empty state
+- Added success toast messages when products are added to the cart or favourites
+- Product cards and cart rows now display sale percentages, original prices, and discounted prices
+
+#### Help centre and support email
+- Replaced the old `mailto:` Help action with a dedicated **`/help`** page
+- Added “How it works” guidance and a **Contact us** form
+- Help requests are sent through the server to `SMTP_USER`, use the customer email as `replyTo`, and send a confirmation email to the customer
+
+#### Newsletter and sale alerts
+- Added newsletter subscription and Yes/No preference confirmation for regular product and discount updates
+- Stored marketing preferences in `newsletter_subscribers`
+- New-product and sale emails are sent only to subscribers with `marketing_opt_in = TRUE`
+- Admin-applied sales trigger a branded deal email for opted-in subscribers
+- Logged-in buyers who are not opted in receive an in-app sale popup instead
+
+#### Delivery location
+- Added a separate **`/delivery-location`** page
+- Users can enter an address manually, find a typed address on the map, click the world map to drop a pin, or use browser geolocation
+- Integrated **Leaflet**, **OpenStreetMap**, and Nominatim forward/reverse geocoding
+- Delivery locations persist per user/guest, update the utility-bar label, and support edit, clear, and add-new actions
+
+#### Admin console
+- Rebuilt **`/admin`** with Analytics, Users & Roles, and Moderation sections
+- Analytics now reports users, sellers, products, newsletter activity, inventory value, category value, top sellers, price bands, ratings, and low-stock products
+- Admins can search users, delete accounts, and switch only **buyer ↔ seller** roles; admin roles are locked
+- Added buyer/seller **role-change requests** with admin approve/reject actions
+- Added listing moderation to hide, restore, or permanently delete products
+- Added per-product sale controls, including sale percentage, clear-sale action, and an “On sale” filter
+- Hidden products are excluded from the public catalog and AI-pick feeds
+
+#### UI and quality improvements
+- Added favourites/cart toast notifications and sale badges
+- Improved desktop and mobile utility navigation for Help, delivery location, and role requests
+- Added safety checks that prevent admins from changing admin roles or deleting their own account
+
+#### Still ahead
+- Stripe checkout and vendor payouts
+- Seller inventory/order dashboard
+- Socket.IO buyer–seller chat
+- OpenAI-generated descriptions and personalized recommendations
 
 ---
 
